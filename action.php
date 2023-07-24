@@ -30,6 +30,7 @@ require_once($CFG->libdir.'/completionlib.php');
 $id      = optional_param('id', 0, PARAM_INT); // Course Module ID
 $userid  = optional_param('userid', 0, PARAM_INT); // User ID ID
 $tab     = optional_param('tab', null, PARAM_ALPHANUM);
+$code    = optional_param('code', null, PARAM_RAW);
 
 if (!$cm = get_coursemodule_from_id('attendees', $id)) {
     throw new \moodle_exception('invalidcoursemodule');
@@ -42,14 +43,22 @@ require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 
 require_capability('mod/attendees:view', $context);
-
 // Check if attendees has sign in/out enabled.
 if ($attendees->timecard) {
-    if ($userid) { // Attempt to sign in / out someone else.
+    if ($userid) { // Attempt to sign in / out someone else with userid.
         require_capability('mod/attendees:signinoutothers', $context);
         $message = attendees_signinout($attendees, $userid);
     } else if(has_capability('mod/attendees:signinout', $context)) { // Sign yourself in or out.
-        $message = attendees_signinout($attendees, $USER->id);
+        if ($attendees->kioskmode && $code !== null) { // Sign in/out by code in kiosk mode.
+            $return = attendees_lookup($attendees, $code);
+            if (!empty($return) && is_numeric($return)) {
+                $message = attendees_signinout($attendees, $return);
+            } else {
+                $message = $return;
+            }
+        } else { // Attempt to sign yourself in.
+            $message = attendees_signinout($attendees, $USER->id);
+        }
     }
 }
 

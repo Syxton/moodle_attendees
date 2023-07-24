@@ -4,6 +4,7 @@
     width: 175px;
     border: 1px solid silver;
     margin: 10px;
+    vertical-align: top;
 }
 
 .attendees_userblock .userinitials, .attendees_userblock .userpicture {
@@ -67,4 +68,36 @@ a.attendees_otherinout_button:hover {
 
 .attendees_status_in .attendees_name {
     background-color: rgb(219, 255, 121);
+}
+
+.attendees_kioskmode #page-header {
+    display: none;
+}
+
+.attendees_kioskmode .logo {
+    display: none;
+}
+
+.attendees_kioskmode {
+    padding: 50px;
+}
+
+body {
+    -webkit-user-select: none;
+    -moz-user-select: -moz-none;
+    -ms-user-select: none;
+    user-select: none
+}
+
+.attendees_groups {
+    font-size: .8em;
+    color: grey;
+}
+
+#attendees_keepalive {
+    display: none;
+}
+
+.attendees_kioskmode #page-wrapper {
+    height: auto !important;
 }

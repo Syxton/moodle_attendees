@@ -61,11 +61,27 @@ class mod_attendees_mod_form extends moodleform_mod {
         $mform->addElement('advcheckbox', 'lockview', get_string('lockview', 'attendees'));
         $mform->setDefault('lockview', $config->lockview);
 
-        $mform->addElement('advcheckbox', 'kioskmode', get_string('kioskmode', 'attendees'));
-        $mform->setDefault('kioskmode', $config->kioskmode);
-
         $mform->addElement('advcheckbox', 'showroster', get_string('showroster', 'attendees'));
         $mform->setDefault('showroster', $config->showroster);
+
+        $mform->addElement('advcheckbox', 'showgroups', get_string('showgroups', 'attendees'));
+        $mform->setDefault('showgroups', $config->showgroups);
+
+        $mform->addElement('header', 'kioskmodedhdr', get_string('kioskmode', 'attendees'));
+        $mform->addElement('advcheckbox', 'kioskmode', get_string('kioskmode', 'attendees'));
+        $mform->setDefault('kioskmode', $config->kioskmode);
+                                                       
+        $searchfields = array('idnumber' => get_string("idnumber"), 
+                              'email' => get_string("email"), 
+                              'username' => get_string("username"), 
+                              'phone1' => get_string("phone1"), 
+                              'phone2' => get_string("phone2"));                                                                                                                           
+        $options = array(                                                                                                           
+            'multiple' => true,                                                  
+            'noselectionstring' => get_string('allareas', 'search'),                                                                
+        );         
+        $mform->addElement('autocomplete', 'searchfields', get_string('searcharea', 'search'), $searchfields, $options);
+        $mform->setDefault('searchfields', $defaultvalues->searchfields);
 
         $mform->addElement('header', 'timecardhdr', get_string('timecard', 'attendees'));
         $mform->addElement('advcheckbox', 'timecard', get_string('timecardenabled', 'attendees'));
@@ -73,6 +89,9 @@ class mod_attendees_mod_form extends moodleform_mod {
 
         $mform->addElement('advcheckbox', 'autosignout', get_string('autosignout', 'attendees'));
         $mform->setDefault('autosignout', $config->autosignout);
+
+        $mform->addElement('advcheckbox', 'iplock', get_string('iplock', 'attendees'));
+        $mform->setDefault('iplock', $config->iplock);
 
         //-------------------------------------------------------
         $this->standard_coursemodule_elements();
@@ -88,6 +107,17 @@ class mod_attendees_mod_form extends moodleform_mod {
      * @return void
      **/
     public function data_preprocessing(&$defaultvalues) {
+        global $DB;
+
+        $ctx = null;
+        if ($this->current && $this->current->coursemodule) {
+            $cm = get_coursemodule_from_instance('attendees', $this->current->id, 0, false, MUST_EXIST);
+            $ctx = context_module::instance($cm->id);
+
+            $attendees = $DB->get_record('attendees', ['id' => $cm->instance]);
+            $defaultvalues['searchfields'] = (array) unserialize_array($attendees->searchfields);
+        }
+
         if (!empty($defaultvalues['displayoptions'])) {
             $displayoptions = (array) unserialize_array($defaultvalues['displayoptions']);
             if (isset($displayoptions['printintro'])) {

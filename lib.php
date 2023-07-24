@@ -98,9 +98,18 @@ function attendees_add_instance($data, $mform = null) {
 
     $cmid = $data->coursemodule;
 
-    $displayoptions = array();
-    $displayoptions['printintro']   = $data->printintro;
+    $options = array();
+    $options['printintro']       = $data->printintro;
+    $options['timecard']         = $data->timecard;
+    $options['autosignout']      = $data->autosignout;
+    $options['defaultview']      = $data->defaultview;
+    $options['showroster']       = $data->showroster;
+    $options['lockview']         = $data->lockview;
+    $options['kioskmode']        = $data->kioskmode;
+    $options['iplock']           = $data->iplock;
+    $options['searchfields']     = $data->searchfields;
 
+    $data->displayoptions = serialize($options);
     $data->id = $DB->insert_record('attendees', $data);
 
     // we need to use context now, so we need to make sure all needed info is already in db
@@ -124,14 +133,20 @@ function attendees_update_instance($data, $mform) {
 
     $cmid        = $data->coursemodule;
     $data->id    = $data->instance;
+    $data->searchfields = serialize(clean_param_array($data->searchfields, PARAM_ALPHANUMEXT));
 
-    $displayoptions = array();
-    $displayoptions['printintro']       = $data->printintro;
-    $displayoptions['timecard']         = $data->timecard;
-    $displayoptions['autosignout']      = $data->autosignout;
-    $displayoptions['defaultview']      = $data->defaultview;
-    $displayoptions['showroster']       = $data->showroster;
-    $data->displayoptions = serialize($displayoptions);
+    $options = array();
+    $options['printintro']       = $data->printintro;
+    $options['timecard']         = $data->timecard;
+    $options['autosignout']      = $data->autosignout;
+    $options['defaultview']      = $data->defaultview;
+    $options['showroster']       = $data->showroster;
+    $options['lockview']         = $data->lockview;
+    $options['kioskmode']        = $data->kioskmode;
+    $options['iplock']           = $data->iplock;
+    $options['searchfields']     = $data->searchfields;
+
+    $data->displayoptions = serialize($options);
 
     $DB->update_record('attendees', $data);
 
@@ -149,7 +164,7 @@ function attendees_update_instance($data, $mform) {
 function attendees_delete_instance($id) {
     global $DB;
 
-    if (!$attendees = $DB->get_record('attendees', array('id'=>$id))) {
+    if (!$attendees = $DB->get_record('attendees', array('id' => $id))) {
         return false;
     }
 
@@ -178,8 +193,8 @@ function attendees_cm_info_dynamic(cm_info $cm) {
     $viewrosters = has_capability('mod/attendees:viewrosters', $context);
     $attendees = $DB->get_record('attendees', ['id' => $cm->instance]);
 
-    if (!$viewrosters && !$attendees->timecard && !$attendees->showroster) {
-        // the field 'customdata' is not empty IF AND ONLY IF we display contens inline
+    if (!$viewrosters && !$attendees->showroster &&
+        !$attendees->timecard && !$attendees->kioskmode) {
         $cm->set_no_view_link();
     }
 }
@@ -332,6 +347,7 @@ function attendees_get_ui($cm, $attendees, $course, $tab = 'all') {
     $context = context_module::instance($cm->id);
     $viewrosters = has_capability('mod/attendees:viewrosters', $context);
 
+    $content = "";
     if (!$viewrosters && is_enrolled($context, $USER, 'mod/attendees:signinout', true) && $attendees->timecard) {
         $content .= attendees_sign_inout_button($cm, $tab);
     }
@@ -370,7 +386,7 @@ function attendees_get_ui($cm, $attendees, $course, $tab = 'all') {
 
     if ($viewrosters || $attendees->showroster) {
         if (has_capability('mod/attendees:signinout', $context)) {
-            if (!$attendees->lockview) {
+            if (!$attendees->lockview && !$attendees->kioskmode) {
                 $content .= attendees_roster_tabs($cm, $tab);
             }
             $content .= attendees_roster_view($cm, $users, $tab);
@@ -379,7 +395,7 @@ function attendees_get_ui($cm, $attendees, $course, $tab = 'all') {
         }
     }
     return $content;
-}       
+}
 
 function attendees_roster_tabs($cm, $tab) {
     global $CFG;
@@ -429,6 +445,8 @@ function attendees_signinout($attendees, $userid) {
     $timecard->userid = $user->id;
     $timecard->aid = $attendees->id;
     $timecard->timelog = $timestamp;
+    $timecard->ip = getremoteaddr();
+
     if (attendees_is_active($user, $attendees->id)) {
         $timecard->event = "out";
         $DB->insert_record('attendees_timecard', $timecard);
@@ -453,36 +471,50 @@ function attendees_current_status($cm, $user) {
 
 function attendees_is_active($user, $aid) {
     global $DB;
-        $attendees = $DB->get_record('attendees', ['id' => $aid]);
-        $lastout = $DB->get_record_sql(
-            'SELECT * FROM {attendees_timecard} WHERE aid = ? AND event = ? AND userid = ? ORDER BY timelog DESC LIMIT 1',
-            [$aid, 'out', $user->id]
-        );
-        $lastin = $DB->get_record_sql(
-            'SELECT * FROM {attendees_timecard} WHERE aid = ? AND event = ? AND userid = ? ORDER BY timelog DESC LIMIT 1',
-            [$aid, 'in', $user->id]
-        );
-        $today = attendees_get_today();
 
+    $attendees = $DB->get_record('attendees', ['id' => $aid]);
+    $iplock = "";
+    if ($attendees->iplock) {
+        $ip = getremoteaddr();
+        $iplock = "AND ip = '$ip' ";
+    }
+
+    $lastout = $DB->get_record_sql(
+        'SELECT * FROM {attendees_timecard} WHERE aid = ? AND event = ? AND userid = ? ' .$iplock. 'ORDER BY timelog DESC LIMIT 1',
+        [$aid, 'out', $user->id]
+    );
+    $lastin = $DB->get_record_sql(
+        'SELECT * FROM {attendees_timecard} WHERE aid = ? AND event = ? AND userid = ?  ' .$iplock. 'ORDER BY timelog DESC LIMIT 1',
+        [$aid, 'in', $user->id]
+    );
+    $today = attendees_get_today();
+
+    if (!empty($lastin) || !empty($lastout)) {
         if ($attendees->autosignout) { // Auto signed out at the end of the day.
-            if ($lastout->timelog > $lastin->timelog && $lastout->timelog > $today) { // have signed out today
+            if (!empty($lastout) && !empty($lastin) &&
+                $lastout->timelog > $lastin->timelog && $lastout->timelog > $today) { // have signed out today
                 return false;
-            } elseif ($lastin->timelog > $lastout->timelog && $today > $lastin->timelog) { // haven't signed in today
+            } elseif (!empty($lastout) && !empty($lastin) &&
+                      $lastin->timelog > $lastout->timelog && $today > $lastin->timelog) { // haven't signed in today
                 return false;
-            } elseif ($lastout->timelog > $lastin->timelog && $today > $lastout->timelog) { // new day
+            } elseif (!empty($lastout) && !empty($lastin) &&
+                      $lastout->timelog > $lastin->timelog && $today > $lastout->timelog) { // new day
                 return false;
-            } elseif (!$lastin->timelog) { // have never signed in
+            } elseif (empty($lastin)) { // have never signed in
                 return false;
             }
             return true;
         } else { // No autosignout.
-            if ($lastout->timelog > $lastin->timelog) { // last action was a sign out
+            if (!empty($lastout) && !empty($lastin) && 
+                $lastout->timelog > $lastin->timelog) { // last action was a sign out
                 return false;
-            } elseif (!$lastin->timelog) { // have never signed in
+            } elseif (empty($lastin)) { // have never signed in
                 return false;
             }
             return true;
         }
+    }
+    return false;
 }
 
 function attendees_get_today(){
@@ -490,6 +522,40 @@ function attendees_get_today(){
     $dateinmytimezone = new DateTime("now", core_date::get_server_timezone_object());
     $UTCdate = new DateTime($dateinmytimezone->format("m/d/Y"), new DateTimeZone("UTC"));
     return $UTCdate->getTimestamp();
+}
+
+function attendees_lookup($attendees, $code) { // Only in Kiosk Mode.
+    $cm = get_coursemodule_from_instance('attendees', $attendees->id, 0, false, MUST_EXIST);
+    $context = context_module::instance($cm->id);
+
+    $searchfields = (array) unserialize_array($attendees->searchfields);
+    if (empty($searchfields)) { // If empty, search all fields.
+        $searchfields = array('idnumber' => get_string("idnumber"), 
+                              'email' => get_string("email"), 
+                              'username' => get_string("username"), 
+                              'phone1' => get_string("phone1"), 
+                              'phone2' => get_string("phone2")); 
+    }
+
+    // Get all possible users.
+    $users = get_enrolled_users($context, 'mod/attendees:signinout', 0, 'u.*', 'lastname ASC');
+    $founduser = array();
+    foreach ($users as $user) {
+        foreach ($searchfields as $field) {
+            echo $user->$field . " = $code ?<br />";
+            if ($user->$field == $code) {
+                $founduser[] = $user;
+                break;
+            }
+        }
+    }
+
+    if (count($founduser) !== 1) { // none or more than 1 match.
+        return get_string("codenotfound", "attendees");
+    } else { // exactly 1 matching user.
+        return $founduser[0]->id;
+    }
+
 }
 
 function attendees_roster_view($cm, $users, $tab) {
@@ -500,22 +566,34 @@ function attendees_roster_view($cm, $users, $tab) {
     $signinoutothers = has_capability('mod/attendees:signinoutothers', $context);
     $attendees = $DB->get_record('attendees', ['id' => $cm->instance]);
 
-    $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab&userid=";
+    $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab";
     $output = "";
+
+    if ($attendees->kioskmode) { // Add search mode for kiosk.
+        $output .= '<div class="attendees_usersearch">
+                        <form method="get" action="' . $url . '">
+                            <input type="hidden" name="id" id="id" value="' . $cm->id . '" />
+                            <input type="hidden" name="tab" id="tab" value="' . $tab . '" />
+                            Username / ID <input type="password" name="code" id="code" onblur="this.focus()" autofocus />
+                            <input type="submit" value="' . get_string("signinout", "attendees") . '" />
+                        </form>
+                    </div>';
+    }
+
     foreach ($users as $user) {
         $status = attendees_current_status($cm, $user);
         $output .= '<div class="attendees_userblock attendees_status_'. $status . '">';
 
-        if ($signinoutothers && $attendees->timecard) { // Only show icons if timecard is enabled and has permissions.
-            $output .= '<a class="attendees_otherinout_button" href="' . $url . $user->id . '" alt="Sign in / Out">
-                ' . $OUTPUT->pix_icon('a/logout', 'Sign Out', 'moodle') . '
-                ' . $OUTPUT->pix_icon('withoutkey', 'Sign In', 'enrol_self') . '
-            </a>';
+        if ($attendees->timecard && $signinoutothers && !$attendees->kioskmode) { // Only show icons if timecard is enabled and has permissions.
+            $output .= '<a class="attendees_otherinout_button" href="' . $url . "&userid=$user->id" . '" alt="' . get_string("signinout", "attendees") . '">
+                            ' . $OUTPUT->pix_icon('a/logout', get_string("signout", "attendees"), 'moodle') . '
+                            ' . $OUTPUT->pix_icon('withoutkey', get_string("signin", "attendees"), 'enrol_self') . '
+                        </a>';
         }
 
         $options = array( 
             'size' => '100', // size of image
-            'link' => true, // make image clickable - the link leads to user profile
+            'link' => !$attendees->kioskmode, // make image clickable - the link leads to user profile
             'alttext' => true, // add image alt attribute
             'class' => "userpicture", // image class attribute
             'visibletoscreenreaders' => false,
@@ -523,7 +601,20 @@ function attendees_roster_view($cm, $users, $tab) {
         $userpic = $OUTPUT->user_picture($user, $options);
         $output .= $userpic;
         $output .= '<div class="attendees_name"> ' . $user->firstname . ' ' . $user->lastname . '</div>';
+        $output .= attendees_list_user_groups($cm, $attendees, $user->id);
         $output .= '</div>';
     }
     return $output;
+}
+
+function attendees_list_user_groups($cm, $attendees, $userid) : string {
+    $grouplist = "";
+    if ($attendees->showgroups) {
+        $groupings = groups_get_user_groups($cm->course, $userid);
+        foreach($groupings[0] as $group) {
+            $grouplist .= "<div>" . groups_get_group_name($group) . "</div>";
+        }
+    }
+
+    return '<div class="attendees_groups">' . $grouplist . '</div>';
 }

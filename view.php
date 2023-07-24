@@ -65,10 +65,10 @@ if (empty($options['printintro'])) {
 $PAGE->set_title($course->shortname.': '.$attendees->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->set_activity_record($attendees);
+$PAGE->add_body_class('limitedwidth');
 
 if ($attendees->kioskmode) {
-    $PAGE->add_body_class('limitedwidth');
-    
+    $PAGE->set_pagelayout('secure'); // Reduced header.
 }
 
 if (!$PAGE->activityheader->is_title_allowed()) {
@@ -76,16 +76,35 @@ if (!$PAGE->activityheader->is_title_allowed()) {
 }
 
 $PAGE->activityheader->set_attrs($activityheader);
-echo $OUTPUT->header();
 
 $tab = !$tab ? $attendees->defaultview : $tab;
 
-$content = attendees_get_ui($cm, $attendees, $course, $tab);
+$content = $OUTPUT->header() . attendees_get_ui($cm, $attendees, $course, $tab);
+
+if ($attendees->kioskmode) { // Wrap kioskmode to control all content.
+    $content = '<div class="attendees_kioskmode">' . 
+                    "<h2>$attendees->name</h2>" . 
+                    "<p>$attendees->intro</p>" . 
+                    $content .
+                '</div>'; 
+}
 
 $formatoptions = new stdClass;
 $formatoptions->noclean = true;
 $formatoptions->overflowdiv = true;
 $formatoptions->context = $context;
-$content = format_text($content, $attendees->contentformat, $formatoptions);
+$content = format_text($content, FORMAT_HTML, $formatoptions);
+
+if ($attendees->kioskmode) { // Wrap kioskmode to control all content.
+    $content .= '
+    <iframe id="attendees_keepalive" src="' . $CFG->wwwroot . '"></iframe>
+
+    <script>
+        window.setInterval(function() {
+            document.getElementById("attendees_keepalive").contentWindow.location.reload();
+        }, 60000);
+    </script>';
+}
+
 echo $OUTPUT->box($content, "generalbox center clearfix");
 echo $OUTPUT->footer();

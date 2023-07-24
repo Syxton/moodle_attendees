@@ -34,8 +34,12 @@ if ($ADMIN->fulltree) {
         get_string('autosignout', 'attendees'), get_string('autosignoutexplain', 'attendees'), 1));
     $settings->add(new admin_setting_configcheckbox('attendees/showroster',
         get_string('showroster', 'attendees'), get_string('showrosterexplain', 'attendees'), 0));
+    $settings->add(new admin_setting_configcheckbox('attendees/showgroups',
+        get_string('showgroups', 'attendees'), get_string('showgroupsexplain', 'attendees'), 1));
     $settings->add(new admin_setting_configcheckbox('attendees/lockview',
         get_string('lockview', 'attendees'), get_string('lockviewexplain', 'attendees'), 0));
     $settings->add(new admin_setting_configcheckbox('attendees/kioskmode',
         get_string('kioskmode', 'attendees'), get_string('kioskmodeexplain', 'attendees'), 0));
+    $settings->add(new admin_setting_configcheckbox('attendees/iplock',
+        get_string('iplock', 'attendees'), get_string('iplockexplain', 'attendees'), 0));
 }

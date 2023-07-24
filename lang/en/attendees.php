@@ -23,6 +23,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['codenotfound'] = 'No User found';
 $string['configdisplayoptions'] = 'Select all options that should be available, existing settings are not modified. Hold CTRL key to select multiple fields.';
 $string['content'] = 'Attendees content';
 $string['contentheader'] = 'Content';
@@ -40,6 +41,7 @@ $string['onlyout'] = 'Only signed out';
 $string['optionsheader'] = 'Display options';
 $string['signin'] = 'Sign In';
 $string['signout'] = 'Sign Out';
+$string['signinout'] = 'Sign in / Out';
 
 $string['attendees-mod-attendees-x'] = 'Any attendees module attendees';
 $string['attendees:addinstance'] = 'Add a new attendees resource';
@@ -57,12 +59,16 @@ $string['search:activity'] = 'Attendees';
 // Config variables
 $string['autosignout'] = 'Automatically sign out students at the end of the day';
 $string['autosignoutexplain'] = 'Students that are signed in will be signed out at the end of the day.';
+$string['iplock'] = 'IP Dependant Lock';
+$string['iplockexplain'] = 'Only show students as active if they have signed in through current device.';
 $string['kioskmode'] = 'Kiosk mode';
 $string['kioskmodeexplain'] = 'Reduced "Moodle stuff" like headers.  A session keep alive so that timeout does not occur';
 $string['lockview'] = 'Do not allow other roster views. (Locked view)';
 $string['lockviewexplain'] = 'Show default roster view. Do not show tabs for All / Active Users / Inactive Users';
 $string['passwordprotected'] = 'Require password to sign in';
 $string['rosterview'] = 'Select default roster view.';
+$string['showgroups'] = 'Show user groups';
+$string['showgroupsexplain'] = 'Show the groups that each user is a member of.';
 $string['showroster'] = 'Show roster to students';
 $string['showrosterexplain'] = 'Students should be able to see All / Only In / Only Out student rosters';
 $string['timecard'] = 'Timecard';
