@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,9 +17,9 @@
 /**
  * Strings for component 'attendees', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package   mod_attendees
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod_attendees
+ * @copyright  2023 Matt Davidson
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 $string['codenotfound'] = 'No User found';
@@ -56,7 +55,7 @@ $string['pluginname'] = 'Attendees';
 $string['privacy:metadata'] = 'The Attendees resource plugin does not store any personal data.';
 $string['search:activity'] = 'Attendees';
 
-// Config variables
+// Config variables.
 $string['autosignout'] = 'Automatically sign out students at the end of the day';
 $string['autosignoutexplain'] = 'Students that are signed in will be signed out at the end of the day.';
 $string['iplock'] = 'IP Dependant Lock';

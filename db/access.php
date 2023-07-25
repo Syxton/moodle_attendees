@@ -71,15 +71,4 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         )
     ),
-
-/* TODO: review public portfolio API first!
-    'mod/attendees:portfolioexport' => array(
-        'captype' => 'read',
-        'contextlevel' => CONTEXT_MODULE,
-        'archetypes' => array(
-            'teacher' => CAP_ALLOW,
-            'editingteacher' => CAP_ALLOW,
-        )
-    ),
-*/
 );

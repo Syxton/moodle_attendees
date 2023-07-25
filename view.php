@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,7 +17,7 @@
 /**
  * Attendees module version information
  *
- * @package mod_attendees
+ * @package    mod_attendees
  * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -27,12 +26,12 @@ require('../../config.php');
 require_once($CFG->dirroot.'/mod/attendees/lib.php');
 require_once($CFG->libdir.'/completionlib.php');
 
-$id      = optional_param('id', 0, PARAM_INT); // Course Module ID
-$p       = optional_param('p', 0, PARAM_INT);  // Attendees instance ID
+$id      = optional_param('id', 0, PARAM_INT);
+$p       = optional_param('p', 0, PARAM_INT);
 $tab     = optional_param('tab', null, PARAM_ALPHANUM);
 
 if ($p) {
-    if (!$attendees = $DB->get_record('attendees', array('id'=>$p))) {
+    if (!$attendees = $DB->get_record('attendees', array('id' => $p))) {
         throw new \moodle_exception('invalidaccessparameter');
     }
     $cm = get_coursemodule_from_instance('attendees', $attendees->id, $attendees->course, false, MUST_EXIST);
@@ -41,10 +40,10 @@ if ($p) {
     if (!$cm = get_coursemodule_from_id('attendees', $id)) {
         throw new \moodle_exception('invalidcoursemodule');
     }
-    $attendees = $DB->get_record('attendees', array('id'=>$cm->instance), '*', MUST_EXIST);
+    $attendees = $DB->get_record('attendees', array('id' => $cm->instance), '*', MUST_EXIST);
 }
 
-$course = $DB->get_record('course', array('id'=>$cm->course), '*', MUST_EXIST);
+$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
@@ -82,11 +81,11 @@ $tab = !$tab ? $attendees->defaultview : $tab;
 $content = $OUTPUT->header() . attendees_get_ui($cm, $attendees, $course, $tab);
 
 if ($attendees->kioskmode) { // Wrap kioskmode to control all content.
-    $content = '<div class="attendees_kioskmode">' . 
-                    "<h2>$attendees->name</h2>" . 
-                    "<p>$attendees->intro</p>" . 
+    $content = '<div class="attendees_kioskmode">' .
+                    "<h2>$attendees->name</h2>" .
+                    "<p>$attendees->intro</p>" .
                     $content .
-                '</div>'; 
+                '</div>';
 }
 
 $formatoptions = new stdClass;

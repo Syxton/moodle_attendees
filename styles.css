@@ -7,12 +7,14 @@
     vertical-align: top;
 }
 
-.attendees_userblock .userinitials, .attendees_userblock .userpicture {
+.attendees_userblock .userinitials,
+.attendees_userblock .userpicture {
     border-radius: 0;
     background-color: #d1d1d14a;
 }
 
-.attendees_userblock .userinitials.size-100, .attendees_userblock .userpicture {
+.attendees_userblock .userinitials.size-100,
+.attendees_userblock .userpicture {
     width: 173px;
     height: 173px;
     font-size: 6rem;
@@ -36,25 +38,27 @@
 
 a.attendees_otherinout_button {
     position: absolute;
-    color: white !important;
+    color: white;
 }
 
 a.attendees_otherinout_button:hover {
-    color: rgb(158, 210, 240) !important;
+    color: rgb(158, 210, 240);
 }
 
 .attendees_otherinout_button .icon {
     font-size: 30px;
     padding: 5px;
-    text-shadow: 0px 0px 5px #000000;
+    text-shadow: 0 0 5px #000000;
 }
 
-.attendees_signinout_button, .attendees_signinout_button .icon {
+.attendees_signinout_button,
+.attendees_signinout_button .icon {
     font-size: 50px;
     padding: 30px;
 }
 
-.attendees_signinout_button:hover, .attendees_signinout_button .icon:hover {
+.attendees_signinout_button:hover,
+.attendees_signinout_button .icon:hover {
     text-decoration: none;
 }
 
@@ -86,7 +90,7 @@ body {
     -webkit-user-select: none;
     -moz-user-select: -moz-none;
     -ms-user-select: none;
-    user-select: none
+    user-select: none;
 }
 
 .attendees_groups {
@@ -99,5 +103,5 @@ body {
 }
 
 .attendees_kioskmode #page-wrapper {
-    height: auto !important;
+    height: auto;
 }

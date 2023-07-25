@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,38 +15,44 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package mod_attendees
+ * Attendees library of functions.
+ *
+ * @package    mod_attendees
  * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * List of features supported in Attendees module
+ *
  * @param string $feature FEATURE_xx constant for requested feature
  * @return mixed True if module supports feature, false if not, null if doesn't know or string for the module purpose.
  */
 function attendees_supports($feature) {
     switch($feature) {
-        case FEATURE_MOD_ARCHETYPE:           return MOD_ARCHETYPE_RESOURCE;
-        case FEATURE_GROUPS:                  return true;
-        case FEATURE_GROUPINGS:               return true;
-        case FEATURE_MOD_INTRO:               return true;
-        case FEATURE_COMPLETION_TRACKS_VIEWS: return false;
-        case FEATURE_GRADE_HAS_GRADE:         return false;
-        case FEATURE_GRADE_OUTCOMES:          return false;
-        case FEATURE_BACKUP_MOODLE2:          return true;
-        case FEATURE_SHOW_DESCRIPTION:        return true;
-        case FEATURE_MOD_PURPOSE:             return MOD_PURPOSE_INTERFACE;
-
-        default: return null;
+        case FEATURE_MOD_PURPOSE:
+            return MOD_PURPOSE_INTERFACE;
+        case FEATURE_MOD_ARCHETYPE:
+            return MOD_ARCHETYPE_RESOURCE;
+        case FEATURE_COMPLETION_TRACKS_VIEWS:
+        case FEATURE_GRADE_HAS_GRADE:
+        case FEATURE_GRADE_OUTCOMES:
+            return false;
+        case FEATURE_BACKUP_MOODLE2:
+        case FEATURE_SHOW_DESCRIPTION:
+        case FEATURE_GROUPS:
+        case FEATURE_GROUPINGS:
+        case FEATURE_MOD_INTRO:
+            return true;
+        default:
+            return null;
     }
 }
 
 /**
  * This function is used by the reset_course_userdata function in moodlelib.
- * @param $data the data submitted from the reset course.
+ *
+ * @param array $data the data submitted from the reset course.
  * @return array status array
  */
 function attendees_reset_userdata($data) {
@@ -69,7 +74,7 @@ function attendees_reset_userdata($data) {
  * @return array
  */
 function attendees_get_view_actions() {
-    return array('view','view all');
+    return array('view', 'view all');
 }
 
 /**
@@ -112,8 +117,8 @@ function attendees_add_instance($data, $mform = null) {
     $data->displayoptions = serialize($options);
     $data->id = $DB->insert_record('attendees', $data);
 
-    // we need to use context now, so we need to make sure all needed info is already in db
-    $DB->set_field('course_modules', 'instance', $data->id, array('id'=>$cmid));
+    // We need to use context now, so we need to make sure all needed info is already in db.
+    $DB->set_field('course_modules', 'instance', $data->id, array('id' => $cmid));
 
     $completiontimeexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
     \core_completion\api::update_completion_date_event($cmid, 'attendees', $data->id, $completiontimeexpected);
@@ -171,7 +176,7 @@ function attendees_delete_instance($id) {
     $cm = get_coursemodule_from_instance('attendees', $id);
     \core_completion\api::update_completion_date_event($cm->id, 'attendees', $id, null);
 
-    // note: all context files are deleted automatically
+    // Note: all context files are deleted automatically.
 
     $DB->delete_records('attendees', array('id' => $attendees->id));
     $DB->delete_records('attendees_timecard', array('aid' => $attendees->id));
@@ -204,8 +209,6 @@ function attendees_cm_info_dynamic(cm_info $cm) {
  * "extra" information that may be needed when printing
  * this activity in a course listing.
  *
- * See {@link course_modinfo::get_array_of_activities()}
- *
  * @param stdClass $coursemodule
  * @return cached_cm_info Info to customise main attendees display
  */
@@ -213,9 +216,9 @@ function attendees_get_coursemodule_info($coursemodule) {
     global $CFG, $DB;
     require_once("$CFG->libdir/resourcelib.php");
 
-    if (!$attendees = $DB->get_record('attendees', array('id'=>$coursemodule->instance),
+    if (!$attendees = $DB->get_record('attendees', array('id' => $coursemodule->instance),
             'id, name, intro, introformat')) {
-        return NULL;
+        return null;
     }
 
     $info = new cached_cm_info();
@@ -245,21 +248,23 @@ function attendees_get_coursemodule_info($coursemodule) {
  * @param stdClass $currentcontext Current context of block
  */
 function attendees_attendees_type_list($pagetype, $parentcontext, $currentcontext) {
-    $module_attendeestype = array('mod-attendees-*'=>get_string('attendees-mod-attendees-x', 'attendees'));
-    return $module_attendeestype;
+    $moduleattendeestype = array('mod-attendees-*' => get_string('attendees-mod-attendees-x', 'attendees'));
+    return $moduleattendeestype;
 }
 
 /**
  * Export attendees resource contents
  *
- * @return array of file content
+ * @param stdClass $cm      course module object
+ * @param string $baseurl   url string
+ * @return array            of file content
  */
 function attendees_export_contents($cm, $baseurl) {
     global $CFG, $DB;
     $contents = array();
     $context = context_module::instance($cm->id);
 
-    $attendees = $DB->get_record('attendees', array('id'=>$cm->instance), '*', MUST_EXIST);
+    $attendees = $DB->get_record('attendees', array('id' => $cm->instance), '*', MUST_EXIST);
 
     return $contents;
 }
@@ -267,10 +272,10 @@ function attendees_export_contents($cm, $baseurl) {
 /**
  * Mark the activity completed (if required) and trigger the course_module_viewed event.
  *
- * @param  stdClass $attendees       attendees object
- * @param  stdClass $course     course object
- * @param  stdClass $cm         course module object
- * @param  stdClass $context    context object
+ * @param stdClass $attendees  attendees object
+ * @param stdClass $course     course object
+ * @param stdClass $cm         course module object
+ * @param stdClass $context    context object
  * @since Moodle 3.0
  */
 function attendees_view($attendees, $course, $cm, $context) {
@@ -314,6 +319,7 @@ function attendees_check_updates_since(cm_info $cm, $from, $filter = array()) {
  *
  * @param calendar_event $event
  * @param \core_calendar\action_factory $factory
+ * @param int $userid user id
  * @return \core_calendar\local\event\entities\action_interface|null
  */
 function mod_attendees_core_calendar_provide_event_action(calendar_event $event,
@@ -342,6 +348,15 @@ function mod_attendees_core_calendar_provide_event_action(calendar_event $event,
     );
 }
 
+/**
+ * Attendees user interface.
+ *
+ * @param cm_info $cm course    module data
+ * @param stdClass $attendees   attendees object
+ * @param stdClass $course      course object
+ * @param string $tab           the name of the selected tab
+ * @return string               user interface html text
+ */
 function attendees_get_ui($cm, $attendees, $course, $tab = 'all') {
     global $USER;
     $context = context_module::instance($cm->id);
@@ -352,7 +367,7 @@ function attendees_get_ui($cm, $attendees, $course, $tab = 'all') {
         $content .= attendees_sign_inout_button($cm, $tab);
     }
 
-    // GROUP MODE
+    // GROUP MODE.
     if ($groupmode = groups_get_activity_groupmode($cm)) {
         $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
         groups_print_activity_menu($cm, $url);
@@ -381,8 +396,7 @@ function attendees_get_ui($cm, $attendees, $course, $tab = 'all') {
         }
     }
 
-
-    // DATA EXPORT LINK
+    // DATA EXPORT LINK.
 
     if ($viewrosters || $attendees->showroster) {
         if (has_capability('mod/attendees:signinout', $context)) {
@@ -397,6 +411,13 @@ function attendees_get_ui($cm, $attendees, $course, $tab = 'all') {
     return $content;
 }
 
+/**
+ * Tab output.
+ *
+ * @param cm_info $cm course    module data
+ * @param string $tab           the name of the selected tab
+ * @return string               tabs html text
+ */
 function attendees_roster_tabs($cm, $tab) {
     global $CFG;
     $all = $onlyin = $onlyout = "";
@@ -420,11 +441,18 @@ function attendees_roster_tabs($cm, $tab) {
             </div>';
 }
 
+/**
+ * Get the sign in/out button.
+ *
+ * @param cm_info $cm course    module data
+ * @param string $tab           the name of the selected tab
+ * @return string               button html text
+ */
 function attendees_sign_inout_button($cm, $tab) {
     global $CFG, $USER, $DB, $OUTPUT;
     $user = $DB->get_record('user', array('id' => $USER->id), '*', MUST_EXIST);
     $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab";
-    if (attendees_is_active($user, $cm->instance)) { 
+    if (attendees_is_active($user, $cm->instance)) {
         $text = get_string("signout", "attendees");
         $inorout = $OUTPUT->pix_icon('a/logout', $text , 'moodle') . " $text";
     } else {
@@ -435,6 +463,13 @@ function attendees_sign_inout_button($cm, $tab) {
     return "<div style='text-align:center'><a class='attendees_signinout_button' href='$url' alt='$text '>$inorout</a></div>";
 }
 
+/**
+ * Log the sign in or out action in the database.
+ *
+ * @param stdClass $attendees   attendees object
+ * @param int $userid           user id
+ * @return string               message output
+ */
 function attendees_signinout($attendees, $userid) {
     global $DB;
     $user = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
@@ -461,6 +496,13 @@ function attendees_signinout($attendees, $userid) {
     return get_string("messagesigned" . $timecard->event, "attendees", $a);
 }
 
+/**
+ * Get user's current status.
+ *
+ * @param cm_info $cm course    module data
+ * @param stdClass $user        user object
+ * @return string               return in or out
+ */
 function attendees_current_status($cm, $user) {
     if (attendees_is_active($user, $cm->instance)) {
         return "in";
@@ -469,6 +511,13 @@ function attendees_current_status($cm, $user) {
     }
 }
 
+/**
+ * Attendees user interface.
+ *
+ * @param stdClass $user        user object
+ * @param int $aid              attendees instance id
+ * @return bool                 is user active
+ */
 function attendees_is_active($user, $aid) {
     global $DB;
 
@@ -492,23 +541,23 @@ function attendees_is_active($user, $aid) {
     if (!empty($lastin) || !empty($lastout)) {
         if ($attendees->autosignout) { // Auto signed out at the end of the day.
             if (!empty($lastout) && !empty($lastin) &&
-                $lastout->timelog > $lastin->timelog && $lastout->timelog > $today) { // have signed out today
+                $lastout->timelog > $lastin->timelog && $lastout->timelog > $today) { // Have signed out today.
                 return false;
-            } elseif (!empty($lastout) && !empty($lastin) &&
-                      $lastin->timelog > $lastout->timelog && $today > $lastin->timelog) { // haven't signed in today
+            } else if (!empty($lastout) && !empty($lastin) &&
+                      $lastin->timelog > $lastout->timelog && $today > $lastin->timelog) { // Haven't signed in today.
                 return false;
-            } elseif (!empty($lastout) && !empty($lastin) &&
-                      $lastout->timelog > $lastin->timelog && $today > $lastout->timelog) { // new day
+            } else if (!empty($lastout) && !empty($lastin) &&
+                      $lastout->timelog > $lastin->timelog && $today > $lastout->timelog) { // New day.
                 return false;
-            } elseif (empty($lastin)) { // have never signed in
+            } else if (empty($lastin)) { // Have never signed in.
                 return false;
             }
             return true;
         } else { // No autosignout.
-            if (!empty($lastout) && !empty($lastin) && 
-                $lastout->timelog > $lastin->timelog) { // last action was a sign out
+            if (!empty($lastout) && !empty($lastin) &&
+                $lastout->timelog > $lastin->timelog) { // Last action was a sign out.
                 return false;
-            } elseif (empty($lastin)) { // have never signed in
+            } else if (empty($lastin)) { // Have never signed in.
                 return false;
             }
             return true;
@@ -517,24 +566,36 @@ function attendees_is_active($user, $aid) {
     return false;
 }
 
-function attendees_get_today(){
+/**
+ * Get beginning of day timestamp.
+ *
+ * @return int      unix timestamp
+ */
+function attendees_get_today() {
     global $CFG;
     $dateinmytimezone = new DateTime("now", core_date::get_server_timezone_object());
-    $UTCdate = new DateTime($dateinmytimezone->format("m/d/Y"), new DateTimeZone("UTC"));
-    return $UTCdate->getTimestamp();
+    $utcdate = new DateTime($dateinmytimezone->format("m/d/Y"), new DateTimeZone("UTC"));
+    return $utcdate->getTimestamp();
 }
 
-function attendees_lookup($attendees, $code) { // Only in Kiosk Mode.
+/**
+ * Attendees kiosk mode search.
+ *
+ * @param stdClass $attendees   attendees object
+ * @param string $code          search string
+ * @return string               returns either an output message or user id
+ */
+function attendees_lookup($attendees, $code) {
     $cm = get_coursemodule_from_instance('attendees', $attendees->id, 0, false, MUST_EXIST);
     $context = context_module::instance($cm->id);
 
     $searchfields = (array) unserialize_array($attendees->searchfields);
     if (empty($searchfields)) { // If empty, search all fields.
-        $searchfields = array('idnumber' => get_string("idnumber"), 
-                              'email' => get_string("email"), 
-                              'username' => get_string("username"), 
-                              'phone1' => get_string("phone1"), 
-                              'phone2' => get_string("phone2")); 
+        $searchfields = array('idnumber' => get_string("idnumber"),
+                              'email' => get_string("email"),
+                              'username' => get_string("username"),
+                              'phone1' => get_string("phone1"),
+                              'phone2' => get_string("phone2"));
     }
 
     // Get all possible users.
@@ -550,14 +611,22 @@ function attendees_lookup($attendees, $code) { // Only in Kiosk Mode.
         }
     }
 
-    if (count($founduser) !== 1) { // none or more than 1 match.
+    if (count($founduser) !== 1) { // None or more than 1 match.
         return get_string("codenotfound", "attendees");
-    } else { // exactly 1 matching user.
+    } else { // Exactly 1 matching user.
         return $founduser[0]->id;
     }
 
 }
 
+/**
+ * Get the selected roster view.
+ *
+ * @param cm_info $cm           course module data
+ * @param stdClass $users       user object
+ * @param string $tab           the name of the selected tab
+ * @return string               output html of roster
+ */
 function attendees_roster_view($cm, $users, $tab) {
     global $CFG, $OUTPUT, $DB;
     require_once($CFG->libdir.'/filelib.php');
@@ -580,24 +649,28 @@ function attendees_roster_view($cm, $users, $tab) {
                     </div>';
     }
 
+    $alt = ' alt="' . get_string("signinout", "attendees") . '"';
+    $icons = $OUTPUT->pix_icon('a/logout', get_string("signout", "attendees"), 'moodle') .
+             $OUTPUT->pix_icon('withoutkey', get_string("signin", "attendees"), 'enrol_self');
+    $options = array(
+        'size' => '100', // Size of image.
+        'link' => !$attendees->kioskmode, // Make image clickable.
+        'alttext' => true, // Add image alt attribute.
+        'class' => "userpicture", // Image class attribute.
+        'visibletoscreenreaders' => false,
+    );
     foreach ($users as $user) {
         $status = attendees_current_status($cm, $user);
         $output .= '<div class="attendees_userblock attendees_status_'. $status . '">';
 
-        if ($attendees->timecard && $signinoutothers && !$attendees->kioskmode) { // Only show icons if timecard is enabled and has permissions.
-            $output .= '<a class="attendees_otherinout_button" href="' . $url . "&userid=$user->id" . '" alt="' . get_string("signinout", "attendees") . '">
-                            ' . $OUTPUT->pix_icon('a/logout', get_string("signout", "attendees"), 'moodle') . '
-                            ' . $OUTPUT->pix_icon('withoutkey', get_string("signin", "attendees"), 'enrol_self') . '
+        // Only show icons if timecard is enabled and has permissions.
+        if ($attendees->timecard && $signinoutothers && !$attendees->kioskmode) {
+            $href = ' href="' . $url . "&userid=$user->id" . '"';
+            $output .= '<a class="attendees_otherinout_button" ' .
+                            $href . $alt . $icons . '
                         </a>';
         }
 
-        $options = array( 
-            'size' => '100', // size of image
-            'link' => !$attendees->kioskmode, // make image clickable - the link leads to user profile
-            'alttext' => true, // add image alt attribute
-            'class' => "userpicture", // image class attribute
-            'visibletoscreenreaders' => false,
-        );
         $userpic = $OUTPUT->user_picture($user, $options);
         $output .= $userpic;
         $output .= '<div class="attendees_name"> ' . $user->firstname . ' ' . $user->lastname . '</div>';
@@ -607,11 +680,19 @@ function attendees_roster_view($cm, $users, $tab) {
     return $output;
 }
 
+/**
+ * List groups that user is a member of.
+ *
+ * @param cm_info $cm course    module data
+ * @param stdClass $attendees   attendees object
+ * @param int $userid           user id
+ * @return string               output list of groups
+ */
 function attendees_list_user_groups($cm, $attendees, $userid) : string {
     $grouplist = "";
     if ($attendees->showgroups) {
         $groupings = groups_get_user_groups($cm->course, $userid);
-        foreach($groupings[0] as $group) {
+        foreach ($groupings[0] as $group) {
             $grouplist .= "<div>" . groups_get_group_name($group) . "</div>";
         }
     }

@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,7 +17,7 @@
 /**
  * Attendees module version information
  *
- * @package mod_attendees
+ * @package    mod_attendees
  * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -27,8 +26,8 @@ require('../../config.php');
 require_once($CFG->dirroot.'/mod/attendees/lib.php');
 require_once($CFG->libdir.'/completionlib.php');
 
-$id      = optional_param('id', 0, PARAM_INT); // Course Module ID
-$userid  = optional_param('userid', 0, PARAM_INT); // User ID ID
+$id      = optional_param('id', 0, PARAM_INT); // Course Module ID.
+$userid  = optional_param('userid', 0, PARAM_INT); // User ID ID.
 $tab     = optional_param('tab', null, PARAM_ALPHANUM);
 $code    = optional_param('code', null, PARAM_RAW);
 
@@ -48,7 +47,7 @@ if ($attendees->timecard) {
     if ($userid) { // Attempt to sign in / out someone else with userid.
         require_capability('mod/attendees:signinoutothers', $context);
         $message = attendees_signinout($attendees, $userid);
-    } else if(has_capability('mod/attendees:signinout', $context)) { // Sign yourself in or out.
+    } else if (has_capability('mod/attendees:signinout', $context)) { // Sign yourself in or out.
         if ($attendees->kioskmode && $code !== null) { // Sign in/out by code in kiosk mode.
             $return = attendees_lookup($attendees, $code);
             if (!empty($return) && is_numeric($return)) {

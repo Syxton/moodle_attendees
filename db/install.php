@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -23,13 +22,14 @@
  *  - lib.php/modulename_install() post installation hook
  *  - partially defaults.php
  *
- * @package mod_attendees
+ * @package    mod_attendees
  * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
-
+/**
+ * Extra install actions.
+ */
 function xmldb_attendees_install() {
     global $CFG;
 

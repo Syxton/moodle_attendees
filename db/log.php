@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -20,15 +19,27 @@
  *
  * @package    mod_attendees
  * @category   log
- * @copyright  2010 Petr Skoda (http://skodak.org)
+ * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 $logs = array(
-    array('module'=>'attendees', 'action'=>'view', 'mtable'=>'attendees', 'field'=>'name'),
-    array('module'=>'attendees', 'action'=>'view all', 'mtable'=>'attendees', 'field'=>'name'),
-    array('module'=>'attendees', 'action'=>'update', 'mtable'=>'attendees', 'field'=>'name'),
-    array('module'=>'attendees', 'action'=>'add', 'mtable'=>'attendees', 'field'=>'name'),
+    array('module' => 'attendees',
+          'action' => 'view',
+          'mtable' => 'attendees',
+          'field' => 'name'),
+    array('module' => 'attendees',
+          'action' => 'view all',
+          'mtable' => 'attendees',
+          'field' => 'name'),
+    array('module' => 'attendees',
+          'action' => 'update',
+          'mtable' => 'attendees',
+          'field' => 'name'),
+    array('module' => 'attendees',
+          'action' => 'add',
+          'mtable' => 'attendees',
+          'field' => 'name'),
 );

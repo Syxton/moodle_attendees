@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,7 +17,7 @@
 /**
  * Attendees configuration form
  *
- * @package mod_attendees
+ * @package    mod_attendees
  * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -28,17 +27,27 @@ defined('MOODLE_INTERNAL') || die;
 require_once($CFG->dirroot.'/course/moodleform_mod.php');
 require_once($CFG->libdir.'/filelib.php');
 
+/**
+ * The mod_attendees course module form class.
+ *
+ * @package    mod_attendees
+ * @since      Moodle 2.6
+ * @copyright  2023 Matt Davidson
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class mod_attendees_mod_form extends moodleform_mod {
-    function definition() {
+    /**
+     * Form definition.
+     */
+    public function definition() {
         global $CFG, $DB;
 
         $mform = $this->_form;
 
         $config = get_config('attendees');
 
-        //-------------------------------------------------------
         $mform->addElement('header', 'general', get_string('general', 'form'));
-        $mform->addElement('text', 'name', get_string('name'), array('size'=>'48'));
+        $mform->addElement('text', 'name', get_string('name'), array('size' => '48'));
         if (!empty($CFG->formatstringstriptags)) {
             $mform->setType('name', PARAM_TEXT);
         } else {
@@ -57,7 +66,7 @@ class mod_attendees_mod_form extends moodleform_mod {
             'onlyout' => get_string('onlyout', 'attendees')
         ];
         $mform->addElement('select', 'defaultview', get_string('rosterview', 'attendees'), $defaultviewoptions);
-        
+
         $mform->addElement('advcheckbox', 'lockview', get_string('lockview', 'attendees'));
         $mform->setDefault('lockview', $config->lockview);
 
@@ -70,16 +79,16 @@ class mod_attendees_mod_form extends moodleform_mod {
         $mform->addElement('header', 'kioskmodedhdr', get_string('kioskmode', 'attendees'));
         $mform->addElement('advcheckbox', 'kioskmode', get_string('kioskmode', 'attendees'));
         $mform->setDefault('kioskmode', $config->kioskmode);
-                                                       
-        $searchfields = array('idnumber' => get_string("idnumber"), 
-                              'email' => get_string("email"), 
-                              'username' => get_string("username"), 
-                              'phone1' => get_string("phone1"), 
-                              'phone2' => get_string("phone2"));                                                                                                                           
-        $options = array(                                                                                                           
-            'multiple' => true,                                                  
-            'noselectionstring' => get_string('allareas', 'search'),                                                                
-        );         
+
+        $searchfields = array('idnumber' => get_string("idnumber"),
+                              'email' => get_string("email"),
+                              'username' => get_string("username"),
+                              'phone1' => get_string("phone1"),
+                              'phone2' => get_string("phone2"));
+        $options = array(
+            'multiple' => true,
+            'noselectionstring' => get_string('allareas', 'search'),
+        );
         $mform->addElement('autocomplete', 'searchfields', get_string('searcharea', 'search'), $searchfields, $options);
         $mform->setDefault('searchfields', $defaultvalues->searchfields);
 
@@ -93,10 +102,8 @@ class mod_attendees_mod_form extends moodleform_mod {
         $mform->addElement('advcheckbox', 'iplock', get_string('iplock', 'attendees'));
         $mform->setDefault('iplock', $config->iplock);
 
-        //-------------------------------------------------------
         $this->standard_coursemodule_elements();
 
-        //-------------------------------------------------------
         $this->add_action_buttons();
     }
 

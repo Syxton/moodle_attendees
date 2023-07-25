@@ -18,19 +18,18 @@
  * The mod_attendees instance list viewed event.
  *
  * @package    mod_attendees
- * @copyright  2013 Ankit Agarwal
+ * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace mod_attendees\event;
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * The mod_attendees instance list viewed event class.
  *
  * @package    mod_attendees
  * @since      Moodle 2.7
- * @copyright  2013 onwards Ankit Agarwal
+ * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class course_module_instance_list_viewed extends \core\event\course_module_instance_list_viewed {

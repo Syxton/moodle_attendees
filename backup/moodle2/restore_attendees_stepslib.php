@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,6 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Attendees restore class file.
  * @package   mod_attendees
  * @category  backup
  * @copyright 2010 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
@@ -31,15 +31,23 @@
  */
 class restore_attendees_activity_structure_step extends restore_activity_structure_step {
 
+    /**
+     * Defining restore struction.
+     * @return stdClass     attendees object
+     */
     protected function define_structure() {
-
         $paths = array();
         $paths[] = new restore_path_element('attendees', '/activity/attendees');
 
-        // Return the paths wrapped into standard activity structure
+        // Return the paths wrapped into standard activity structure.
         return $this->prepare_activity_structure($paths);
     }
 
+    /**
+     * Process backup data from attendees object.
+     * @param object $data  data object
+     * @return stdClass     attendees object
+     */
     protected function process_attendees($data) {
         global $DB;
 
@@ -47,17 +55,17 @@ class restore_attendees_activity_structure_step extends restore_activity_structu
         $oldid = $data->id;
         $data->course = $this->get_courseid();
 
-        // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
-        // See MDL-9367.
-
-        // insert the attendees record
+        // Insert the attendees record.
         $newitemid = $DB->insert_record('attendees', $data);
-        // immediately after inserting "activity" record, call this
+        // Immediately after inserting "activity" record, call this.
         $this->apply_activity_instance($newitemid);
     }
 
+    /**
+     * Add data after backup.
+     */
     protected function after_execute() {
-        // Add attendees related files, no need to match by itemname (just internally handled context)
+        // Add attendees related files, no need to match by itemname.
         $this->add_related_files('mod_attendees', 'intro', null);
         $this->add_related_files('mod_attendees', 'content', null);
     }

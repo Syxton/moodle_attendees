@@ -18,19 +18,18 @@
  * The mod_attendees course module viewed event.
  *
  * @package    mod_attendees
- * @copyright  2013 Ankit Agarwal
+ * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace mod_attendees\event;
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * The mod_attendees course module viewed event class.
  *
  * @package    mod_attendees
  * @since      Moodle 2.6
- * @copyright  2013 Ankit Agarwal
+ * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class course_module_viewed extends \core\event\course_module_viewed {
@@ -44,6 +43,10 @@ class course_module_viewed extends \core\event\course_module_viewed {
         $this->data['objecttable'] = 'attendees';
     }
 
+    /**
+     * Object mapping.
+     * @return array array
+     */
     public static function get_objectid_mapping() {
         return array('db' => 'attendees', 'restore' => 'attendees');
     }

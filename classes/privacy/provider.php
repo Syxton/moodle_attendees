@@ -18,17 +18,15 @@
  * Privacy Subsystem implementation for mod_attendees.
  *
  * @package    mod_attendees
- * @copyright  2018 Zig Tan <zig@moodle.com>
+ * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace mod_attendees\privacy;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The mod_attendees module does not store any data.
  *
- * @copyright  2018 Zig Tan <zig@moodle.com>
+ * @copyright  2023 Matt Davidson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements \core_privacy\local\metadata\null_provider {
