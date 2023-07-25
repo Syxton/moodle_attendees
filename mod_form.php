@@ -40,7 +40,7 @@ class mod_attendees_mod_form extends moodleform_mod {
      * Form definition.
      */
     public function definition() {
-        global $CFG, $DB;
+        global $CFG;
 
         $mform = $this->_form;
 
@@ -90,7 +90,7 @@ class mod_attendees_mod_form extends moodleform_mod {
             'noselectionstring' => get_string('allareas', 'search'),
         );
         $mform->addElement('autocomplete', 'searchfields', get_string('searcharea', 'search'), $searchfields, $options);
-        $mform->setDefault('searchfields', $defaultvalues->searchfields);
+        $mform->setDefault('searchfields', $config->searchfields);
 
         $mform->addElement('header', 'timecardhdr', get_string('timecard', 'attendees'));
         $mform->addElement('advcheckbox', 'timecard', get_string('timecardenabled', 'attendees'));
@@ -116,7 +116,6 @@ class mod_attendees_mod_form extends moodleform_mod {
     public function data_preprocessing(&$defaultvalues) {
         global $DB;
 
-        $ctx = null;
         if ($this->current && $this->current->coursemodule) {
             $cm = get_coursemodule_from_instance('attendees', $this->current->id, 0, false, MUST_EXIST);
             $ctx = context_module::instance($cm->id);

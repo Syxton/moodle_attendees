@@ -120,8 +120,8 @@ function attendees_add_instance($data, $mform = null) {
     // We need to use context now, so we need to make sure all needed info is already in db.
     $DB->set_field('course_modules', 'instance', $data->id, array('id' => $cmid));
 
-    $completiontimeexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
-    \core_completion\api::update_completion_date_event($cmid, 'attendees', $data->id, $completiontimeexpected);
+    $compexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
+    \core_completion\api::update_completion_date_event($cmid, 'attendees', $data->id, $compexpected);
 
     return $data->id;
 }
@@ -155,8 +155,8 @@ function attendees_update_instance($data, $mform) {
 
     $DB->update_record('attendees', $data);
 
-    $completiontimeexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
-    \core_completion\api::update_completion_date_event($cmid, 'attendees', $data->id, $completiontimeexpected);
+    $compexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
+    \core_completion\api::update_completion_date_event($cmid, 'attendees', $data->id, $compexpected);
 
     return true;
 }
@@ -260,11 +260,9 @@ function attendees_attendees_type_list($pagetype, $parentcontext, $currentcontex
  * @return array            of file content
  */
 function attendees_export_contents($cm, $baseurl) {
-    global $CFG, $DB;
-    $contents = array();
-    $context = context_module::instance($cm->id);
+    global $DB;
 
-    $attendees = $DB->get_record('attendees', array('id' => $cm->instance), '*', MUST_EXIST);
+    $contents = $DB->get_record('attendees', array('id' => $cm->instance), '*', MUST_EXIST);
 
     return $contents;
 }
@@ -353,11 +351,10 @@ function mod_attendees_core_calendar_provide_event_action(calendar_event $event,
  *
  * @param cm_info $cm course    module data
  * @param stdClass $attendees   attendees object
- * @param stdClass $course      course object
  * @param string $tab           the name of the selected tab
  * @return string               user interface html text
  */
-function attendees_get_ui($cm, $attendees, $course, $tab = 'all') {
+function attendees_get_ui($cm, $attendees, $tab = 'all') {
     global $USER;
     $context = context_module::instance($cm->id);
     $viewrosters = has_capability('mod/attendees:viewrosters', $context);
@@ -572,7 +569,6 @@ function attendees_is_active($user, $aid) {
  * @return int      unix timestamp
  */
 function attendees_get_today() {
-    global $CFG;
     $dateinmytimezone = new DateTime("now", core_date::get_server_timezone_object());
     $utcdate = new DateTime($dateinmytimezone->format("m/d/Y"), new DateTimeZone("UTC"));
     return $utcdate->getTimestamp();

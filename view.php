@@ -78,7 +78,7 @@ $PAGE->activityheader->set_attrs($activityheader);
 
 $tab = !$tab ? $attendees->defaultview : $tab;
 
-$content = $OUTPUT->header() . attendees_get_ui($cm, $attendees, $course, $tab);
+$content = $OUTPUT->header() . attendees_get_ui($cm, $attendees, $tab);
 
 if ($attendees->kioskmode) { // Wrap kioskmode to control all content.
     $content = '<div class="attendees_kioskmode">' .
