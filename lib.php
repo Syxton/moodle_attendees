@@ -352,6 +352,7 @@ function mod_attendees_core_calendar_provide_event_action(calendar_event $event,
  * @param cm_info $cm           course module data
  * @param stdClass $attendees   attendees object
  * @param string $tab           the name of the selected tab
+ * @param int $groupid          group id
  * @return string               user interface html text
  */
 function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0) {
