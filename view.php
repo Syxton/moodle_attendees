@@ -27,6 +27,7 @@ require_once($CFG->dirroot.'/mod/attendees/lib.php');
 require_once($CFG->libdir.'/completionlib.php');
 
 $id      = optional_param('id', 0, PARAM_INT);
+$group   = optional_param('group', 0, PARAM_INT);
 $p       = optional_param('p', 0, PARAM_INT);
 $tab     = optional_param('tab', null, PARAM_ALPHANUM);
 
@@ -78,7 +79,7 @@ $PAGE->activityheader->set_attrs($activityheader);
 
 $tab = !$tab ? $attendees->defaultview : $tab;
 
-$content = $OUTPUT->header() . attendees_get_ui($cm, $attendees, $tab);
+$content = $OUTPUT->header() . attendees_get_ui($cm, $attendees, $tab, $group);
 
 if ($attendees->kioskmode) { // Wrap kioskmode to control all content.
     $content = '<div class="attendees_kioskmode">' .

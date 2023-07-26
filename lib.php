@@ -349,12 +349,12 @@ function mod_attendees_core_calendar_provide_event_action(calendar_event $event,
 /**
  * Attendees user interface.
  *
- * @param cm_info $cm course    module data
+ * @param cm_info $cm           course module data
  * @param stdClass $attendees   attendees object
  * @param string $tab           the name of the selected tab
  * @return string               user interface html text
  */
-function attendees_get_ui($cm, $attendees, $tab = 'all') {
+function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0) {
     global $USER;
     $context = context_module::instance($cm->id);
     $viewrosters = has_capability('mod/attendees:viewrosters', $context);
@@ -367,9 +367,13 @@ function attendees_get_ui($cm, $attendees, $tab = 'all') {
     // GROUP MODE.
     if ($groupmode = groups_get_activity_groupmode($cm)) {
         $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
-        groups_print_activity_menu($cm, $url);
-
-        $groupid = groups_get_activity_group($cm);
+        if (!$groupid) {
+            $groupid = groups_get_activity_group($cm);
+        }
+        $allgroups = groups_get_all_groups($cm->course, 0, $cm->groupingid);
+        if (count($allgroups) > 1) { // Only show selector if there is more than 1 group to show.
+            $content .= '<div class="group_selector">' . groups_print_activity_menu($cm, $url, true) . "</div>";
+        }
     }
 
     if (!$groupmode || (!$cm->groupingid && !$groupid)) { // All users.
@@ -411,7 +415,7 @@ function attendees_get_ui($cm, $attendees, $tab = 'all') {
 /**
  * Tab output.
  *
- * @param cm_info $cm course    module data
+ * @param cm_info $cm           course module data
  * @param string $tab           the name of the selected tab
  * @return string               tabs html text
  */
@@ -441,7 +445,7 @@ function attendees_roster_tabs($cm, $tab) {
 /**
  * Get the sign in/out button.
  *
- * @param cm_info $cm course    module data
+ * @param cm_info $cm           course module data
  * @param string $tab           the name of the selected tab
  * @return string               button html text
  */
@@ -496,7 +500,7 @@ function attendees_signinout($attendees, $userid) {
 /**
  * Get user's current status.
  *
- * @param cm_info $cm course    module data
+ * @param cm_info $cm           course module data
  * @param stdClass $user        user object
  * @return string               return in or out
  */
@@ -530,7 +534,7 @@ function attendees_is_active($user, $aid) {
         [$aid, 'out', $user->id]
     );
     $lastin = $DB->get_record_sql(
-        'SELECT * FROM {attendees_timecard} WHERE aid = ? AND event = ? AND userid = ?  ' .$iplock. 'ORDER BY timelog DESC LIMIT 1',
+        'SELECT * FROM {attendees_timecard} WHERE aid = ? AND event = ? AND userid = ? ' .$iplock. 'ORDER BY timelog DESC LIMIT 1',
         [$aid, 'in', $user->id]
     );
     $today = attendees_get_today();
@@ -543,8 +547,8 @@ function attendees_is_active($user, $aid) {
             } else if (!empty($lastout) && !empty($lastin) &&
                       $lastin->timelog > $lastout->timelog && $today > $lastin->timelog) { // Haven't signed in today.
                 return false;
-            } else if (!empty($lastout) && !empty($lastin) &&
-                      $lastout->timelog > $lastin->timelog && $today > $lastout->timelog) { // New day.
+            } else if ((!empty($lastout) && !empty($lastin) && $today > $lastout->timelog && $today > $lastin->timelog) ||
+                        (empty($lastout) && !empty($lastin) && $today > $lastin->timelog)) { // New day.
                 return false;
             } else if (empty($lastin)) { // Have never signed in.
                 return false;
@@ -660,11 +664,11 @@ function attendees_roster_view($cm, $users, $tab) {
         $output .= '<div class="attendees_userblock attendees_status_'. $status . '">';
 
         // Only show icons if timecard is enabled and has permissions.
-        if ($attendees->timecard && $signinoutothers && !$attendees->kioskmode) {
+        if (!empty($attendees->timecard) && !empty($signinoutothers) && empty($attendees->kioskmode)) {
             $href = ' href="' . $url . "&userid=$user->id" . '"';
-            $output .= '<a class="attendees_otherinout_button" ' .
-                            $href . $alt . $icons . '
-                        </a>';
+            $output .= '<a class="attendees_otherinout_button" ' . $href . $alt . ' >' .
+                            $icons .
+                       '</a>';
         }
 
         $userpic = $OUTPUT->user_picture($user, $options);
@@ -679,7 +683,7 @@ function attendees_roster_view($cm, $users, $tab) {
 /**
  * List groups that user is a member of.
  *
- * @param cm_info $cm course    module data
+ * @param cm_info $cm           course module data
  * @param stdClass $attendees   attendees object
  * @param int $userid           user id
  * @return string               output list of groups
@@ -689,7 +693,7 @@ function attendees_list_user_groups($cm, $attendees, $userid) : string {
     if ($attendees->showgroups) {
         $groupings = groups_get_user_groups($cm->course, $userid);
         foreach ($groupings[0] as $group) {
-            $grouplist .= "<div>" . groups_get_group_name($group) . "</div>";
+            $grouplist .= "<div class='attendees_group'>" . groups_get_group_name($group) . "</div>";
         }
     }
 

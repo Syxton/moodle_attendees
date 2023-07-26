@@ -48,7 +48,7 @@ a.attendees_otherinout_button:hover {
 .attendees_otherinout_button .icon {
     font-size: 30px;
     padding: 5px;
-    text-shadow: 0 0 5px #000000;
+    text-shadow: 1px 1px 2px #000000;
 }
 
 .attendees_signinout_button,
@@ -74,6 +74,11 @@ a.attendees_otherinout_button:hover {
     background-color: rgb(219, 255, 121);
 }
 
+.attendees_name {
+    font-weight: bold;
+    background-color: #d1d1d14a;
+}
+
 .attendees_kioskmode #page-header {
     display: none;
 }
@@ -96,6 +101,14 @@ body {
 .attendees_groups {
     font-size: .8em;
     color: grey;
+    text-align: left;
+}
+
+.attendees_group {
+    display: inline-block;
+    margin-bottom: 2px;
+    min-width: 50%;
+    padding: 2px 4px;
 }
 
 #attendees_keepalive {
@@ -104,4 +117,8 @@ body {
 
 .attendees_kioskmode #page-wrapper {
     height: auto;
+}
+
+#page {
+    margin-top: 0px;
 }
