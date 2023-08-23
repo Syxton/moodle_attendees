@@ -111,6 +111,7 @@ function attendees_add_instance($data, $mform = null) {
     $options['showroster']       = $data->showroster;
     $options['lockview']         = $data->lockview;
     $options['kioskmode']        = $data->kioskmode;
+    $options['kioskbuttons']     = $data->kioskbuttons;
     $options['iplock']           = $data->iplock;
     $options['searchfields']     = $data->searchfields;
 
@@ -148,6 +149,7 @@ function attendees_update_instance($data, $mform) {
     $options['showroster']       = $data->showroster;
     $options['lockview']         = $data->lockview;
     $options['kioskmode']        = $data->kioskmode;
+    $options['kioskbuttons']     = $data->kioskbuttons;
     $options['iplock']           = $data->iplock;
     $options['searchfields']     = $data->searchfields;
 
@@ -353,15 +355,16 @@ function mod_attendees_core_calendar_provide_event_action(calendar_event $event,
  * @param stdClass $attendees   attendees object
  * @param string $tab           the name of the selected tab
  * @param int $groupid          group id
+ * @param bool $refresh         wheter the entire page content is needed or just the roster updated
  * @return string               user interface html text
  */
-function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0) {
+function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0, $refresh = false) {
     global $USER;
     $context = context_module::instance($cm->id);
     $viewrosters = has_capability('mod/attendees:viewrosters', $context);
 
     $content = "";
-    if (!$viewrosters && is_enrolled($context, $USER, 'mod/attendees:signinout', true) && $attendees->timecard) {
+    if (!$viewrosters && is_enrolled($context, $USER, 'mod/attendees:signinout', true) && $attendees->timecard && !$refresh) {
         $content .= attendees_sign_inout_button($cm, $tab);
     }
 
@@ -372,7 +375,7 @@ function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0) {
             $groupid = groups_get_activity_group($cm);
         }
         $allgroups = groups_get_all_groups($cm->course, 0, $cm->groupingid);
-        if (count($allgroups) > 1) { // Only show selector if there is more than 1 group to show.
+        if (count($allgroups) > 1 && !$refresh) { // Only show selector if there is more than 1 group to show.
             $content .= '<div class="group_selector">' . groups_print_activity_menu($cm, $url, true) . "</div>";
         }
     }
@@ -402,12 +405,12 @@ function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0) {
 
     if ($viewrosters || $attendees->showroster) {
         if (has_capability('mod/attendees:signinout', $context)) {
-            if (!$attendees->lockview && !$attendees->kioskmode) {
+            if (!$attendees->lockview && !$attendees->kioskmode && !$refresh) {
                 $content .= attendees_roster_tabs($cm, $tab);
             }
-            $content .= attendees_roster_view($cm, $users, $tab);
+            $content .= attendees_roster_view($cm, $users, $tab, $refresh);
         } else {
-            $content .= attendees_roster_view($cm, $users, $tab);
+            $content .= attendees_roster_view($cm, $users, $tab, $refresh);
         }
     }
     return $content;
@@ -626,9 +629,10 @@ function attendees_lookup($attendees, $code) {
  * @param cm_info $cm           course module data
  * @param stdClass $users       user object
  * @param string $tab           the name of the selected tab
+ * @param bool $refresh         wheter the entire page content is needed or just the roster updated
  * @return string               output html of roster
  */
-function attendees_roster_view($cm, $users, $tab) {
+function attendees_roster_view($cm, $users, $tab, $refresh = false) {
     global $CFG, $OUTPUT, $DB;
     require_once($CFG->libdir.'/filelib.php');
 
@@ -639,13 +643,27 @@ function attendees_roster_view($cm, $users, $tab) {
     $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab";
     $output = "";
 
-    if ($attendees->kioskmode) { // Add search mode for kiosk.
+    if ($attendees->kioskmode && !$refresh) { // Add search mode for kiosk.
         $output .= '<div class="attendees_usersearch">
-                        <form method="get" action="' . $url . '">
-                            <input type="hidden" name="id" id="id" value="' . $cm->id . '" />
-                            <input type="hidden" name="tab" id="tab" value="' . $tab . '" />
-                            Username / ID <input type="password" name="code" id="code" onblur="this.focus()" autofocus />
-                            <input type="submit" value="' . get_string("signinout", "attendees") . '" />
+                        <form method="get" action="' . $url . '" style="width: 450px;margin: auto;">
+                            <input type="hidden"
+                                   name="id"
+                                   id="id"
+                                   value="' . $cm->id . '" />
+                            <input type="hidden"
+                                   name="tab"
+                                   id="tab"
+                                   value="' . $tab . '" />
+                            <label style="font-weight: bold;">' . get_string("usersearch", "attendees") . '</label>
+                            <input class="form-control attendees_search"
+                                   type="password"
+                                   name="code"
+                                   id="code"
+                                   onblur="this.focus()" autofocus />
+                            <input class="btn btn-primary"
+                                   type="submit"
+                                   style="vertical-align: top;"
+                                   value="' . get_string("signinout", "attendees") . '" />
                         </form>
                     </div>';
     }
@@ -660,12 +678,15 @@ function attendees_roster_view($cm, $users, $tab) {
         'class' => "userpicture", // Image class attribute.
         'visibletoscreenreaders' => false,
     );
+
+    $output .= '<div class="attendees_refreshable">';
     foreach ($users as $user) {
         $status = attendees_current_status($cm, $user);
         $output .= '<div class="attendees_userblock attendees_status_'. $status . '">';
 
         // Only show icons if timecard is enabled and has permissions.
-        if (!empty($attendees->timecard) && !empty($signinoutothers) && empty($attendees->kioskmode)) {
+        if (!empty($attendees->timecard) && !empty($signinoutothers) &&
+            (empty($attendees->kioskmode) || (!empty($attendees->kioskmode) && !empty($attendees->kioskbuttons)))) {
             $href = ' href="' . $url . "&userid=$user->id" . '"';
             $output .= '<a class="attendees_otherinout_button" ' . $href . $alt . ' >' .
                             $icons .
@@ -678,6 +699,7 @@ function attendees_roster_view($cm, $users, $tab) {
         $output .= attendees_list_user_groups($cm, $attendees, $user->id);
         $output .= '</div>';
     }
+    $output .= '</div>';
     return $output;
 }
 

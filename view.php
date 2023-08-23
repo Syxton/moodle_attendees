@@ -95,16 +95,32 @@ $formatoptions->overflowdiv = true;
 $formatoptions->context = $context;
 $content = format_text($content, FORMAT_HTML, $formatoptions);
 
-if ($attendees->kioskmode) { // Wrap kioskmode to control all content.
     $content .= '
     <iframe id="attendees_keepalive" src="' . $CFG->wwwroot . '"></iframe>
-
     <script>
-        window.setInterval(function() {
+        window.setInterval(() => {
             document.getElementById("attendees_keepalive").contentWindow.location.reload();
         }, 60000);
+
+        window.setInterval(() => { 
+            $.ajax({
+                url : "' . $CFG->wwwroot . '/mod/attendees/ajax.php",
+                type : "GET",
+                data : {
+                    "id" : ' . $id . ',
+                    "tab" : "' . $tab . '",
+                    "group" : ' . $group . '
+                },
+                dataType: "json",
+                success : function(data) {              
+                    $(".attendees_refreshable").html(data);
+                },
+                error : function(request, error) {
+                    console.log("Request: " + JSON.stringify(request));
+                }
+            });
+        }, 5000);
     </script>';
-}
 
 echo $OUTPUT->box($content, "generalbox center clearfix");
 echo $OUTPUT->footer();

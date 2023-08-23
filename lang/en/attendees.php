@@ -41,6 +41,7 @@ $string['optionsheader'] = 'Display options';
 $string['signin'] = 'Sign In';
 $string['signout'] = 'Sign Out';
 $string['signinout'] = 'Sign in / Out';
+$string['usersearch'] = 'User Search';
 
 $string['attendees-mod-attendees-x'] = 'Any attendees module attendees';
 $string['attendees:addinstance'] = 'Add a new attendees resource';
@@ -62,6 +63,8 @@ $string['iplock'] = 'IP Dependant Lock';
 $string['iplockexplain'] = 'Only show students as active if they have signed in through current device.';
 $string['kioskmode'] = 'Kiosk mode';
 $string['kioskmodeexplain'] = 'Reduced "Moodle stuff" like headers.  A session keep alive so that timeout does not occur';
+$string['kioskbuttons'] = 'Kiosk mode sign in/out buttons.';
+$string['kioskbuttonsexplain'] = 'In Kiosk Mode, show sign in or sign out buttons.';
 $string['lockview'] = 'Do not allow other roster views. (Locked view)';
 $string['lockviewexplain'] = 'Show default roster view. Do not show tabs for All / Active Users / Inactive Users';
 $string['passwordprotected'] = 'Require password to sign in';

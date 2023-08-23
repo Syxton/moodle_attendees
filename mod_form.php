@@ -80,6 +80,10 @@ class mod_attendees_mod_form extends moodleform_mod {
         $mform->addElement('advcheckbox', 'kioskmode', get_string('kioskmode', 'attendees'));
         $mform->setDefault('kioskmode', $config->kioskmode);
 
+        $mform->addElement('advcheckbox', 'kioskbuttons', get_string('kioskbuttons', 'attendees'));
+        $mform->setDefault('kioskbuttons', $config->kioskbuttons);
+        $mform->hideIf('kioskbuttons', 'kioskmode', 'eq', 0);
+
         $searchfields = array('idnumber' => get_string("idnumber"),
                               'email' => get_string("email"),
                               'username' => get_string("username"),

@@ -119,6 +119,11 @@ body {
     height: auto;
 }
 
-#page {
+.attendees_kioskmode #page {
     margin-top: 0px;
+}
+
+.form-control.attendees_search {
+    display: inline-block;
+    width: 200px;
 }

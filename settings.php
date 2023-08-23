@@ -41,4 +41,6 @@ if ($ADMIN->fulltree) {
         get_string('kioskmode', 'attendees'), get_string('kioskmodeexplain', 'attendees'), 0));
     $settings->add(new admin_setting_configcheckbox('attendees/iplock',
         get_string('iplock', 'attendees'), get_string('iplockexplain', 'attendees'), 0));
+    $settings->add(new admin_setting_configcheckbox('attendees/kioskbuttons',
+        get_string('kioskbuttons', 'attendees'), get_string('kioskbuttonsexplain', 'attendees'), 0));
 }
