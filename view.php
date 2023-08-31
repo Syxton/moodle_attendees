@@ -106,7 +106,7 @@ $content = format_text($content, FORMAT_HTML, $formatoptions);
             return false;
         });
 
-        window.setInterval(() => { 
+        window.setInterval(() => {
             $.ajax({
                 url : "' . $CFG->wwwroot . '/mod/attendees/ajax.php",
                 type : "GET",
@@ -116,7 +116,7 @@ $content = format_text($content, FORMAT_HTML, $formatoptions);
                     "group" : ' . $group . '
                 },
                 dataType: "json",
-                success : function(data) {              
+                success : function(data) {
                     $(".attendees_refreshable").html(data);
                 },
                 error : function(request, error) {

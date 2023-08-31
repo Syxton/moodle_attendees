@@ -53,8 +53,8 @@ a.attendees_otherinout_button {
 
 .attendees_userblock a.d-inline-block {
     position: relative;
-    display: block !important;
-    outline : none;
+    display: block;
+    outline: none;
 }
 
 a.attendees_otherinout_button:hover {
@@ -64,7 +64,7 @@ a.attendees_otherinout_button:hover {
 .attendees_otherinout_button .icon {
     font-size: 20px;
     padding: 5px;
-    text-shadow: 1px 1px 2px #000000;
+    text-shadow: 1px 1px 2px #000;
 }
 
 .attendees_signinout_button,
@@ -136,7 +136,7 @@ body {
 }
 
 .attendees_kioskmode #page {
-    margin-top: 0px;
+    margin-top: 0;
 }
 
 .form-control.attendees_search {
