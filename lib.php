@@ -103,6 +103,7 @@ function attendees_add_instance($data, $mform = null) {
 
     $cmid = $data->coursemodule;
 
+    $data->searchfields = serialize(clean_param_array($data->searchfields, PARAM_ALPHANUMEXT));
     $options = array();
     $options['printintro']       = $data->printintro;
     $options['timecard']         = $data->timecard;

@@ -18,6 +18,7 @@
     width: 173px;
     height: 173px;
     font-size: 6rem;
+    margin: 0;
 }
 
 .attendees_roster_tabs {
@@ -37,8 +38,23 @@
 }
 
 a.attendees_otherinout_button {
-    position: absolute;
+    display: block;
+    height: 30px;
+    text-align: left;
+    background: lightgrey;
     color: white;
+}
+.attendees_userblock a.d-inline-block:active,
+.attendees_userblock a.d-inline-block:focus {
+    outline-style: none;
+    box-shadow: none;
+    border-color: transparent;
+}
+
+.attendees_userblock a.d-inline-block {
+    position: relative;
+    display: block !important;
+    outline : none;
 }
 
 a.attendees_otherinout_button:hover {
@@ -46,7 +62,7 @@ a.attendees_otherinout_button:hover {
 }
 
 .attendees_otherinout_button .icon {
-    font-size: 30px;
+    font-size: 20px;
     padding: 5px;
     text-shadow: 1px 1px 2px #000000;
 }

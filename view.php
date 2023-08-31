@@ -102,6 +102,10 @@ $content = format_text($content, FORMAT_HTML, $formatoptions);
             document.getElementById("attendees_keepalive").contentWindow.location.reload();
         }, 60000);
 
+        jQuery(document).bind("contextmenu", function(e) {
+            return false;
+        });
+
         window.setInterval(() => { 
             $.ajax({
                 url : "' . $CFG->wwwroot . '/mod/attendees/ajax.php",
