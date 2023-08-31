@@ -27,9 +27,8 @@ require_once($CFG->dirroot.'/mod/attendees/lib.php');
 require_once($CFG->libdir.'/completionlib.php');
 
 $id      = optional_param('id', 0, PARAM_INT); // Course Module ID.
-$userid  = optional_param('userid', 0, PARAM_INT); // User ID ID.
 $tab     = optional_param('tab', null, PARAM_ALPHANUM);
-$groupid = optional_param('groupid', null, PARAM_INT);
+$group = optional_param('group', null, PARAM_INT);
 
 if (!$cm = get_coursemodule_from_id('attendees', $id)) {
     throw new \moodle_exception('invalidcoursemodule');
@@ -45,10 +44,8 @@ require_capability('mod/attendees:view', $context);
 
 $json = json_encode(array());
 
-// Check if attendees has sign in/out enabled.
-if ($attendees->timecard) {
-    $data = array(attendees_get_ui($cm, $attendees, $tab, $groupid, true));
-    $json = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
-}
+// Refresh list of users.
+$data = array(attendees_get_ui($cm, $attendees, $tab, $group, true));
+$json = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
 
 echo $json;
