@@ -53,7 +53,7 @@ class restore_attendees_activity_task extends restore_activity_task {
     public static function define_decode_contents() {
         $contents = array();
 
-        $contents[] = new restore_decode_content('attendees', array('intro', 'content'), 'attendees');
+        $contents[] = new restore_decode_content('attendees', array('intro'), 'attendees');
 
         return $contents;
     }

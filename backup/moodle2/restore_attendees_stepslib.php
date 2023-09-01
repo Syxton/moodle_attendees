@@ -67,6 +67,5 @@ class restore_attendees_activity_structure_step extends restore_activity_structu
     protected function after_execute() {
         // Add attendees related files, no need to match by itemname.
         $this->add_related_files('mod_attendees', 'intro', null);
-        $this->add_related_files('mod_attendees', 'content', null);
     }
 }

@@ -30,7 +30,6 @@
  * Define the complete attendees structure for backup, with file and id annotations
  */
 class backup_attendees_activity_structure_step extends backup_activity_structure_step {
-
     /**
      * Defining backup struction.
      * @return stdClass     attendees object
@@ -41,7 +40,8 @@ class backup_attendees_activity_structure_step extends backup_activity_structure
 
         // Define each element separated.
         $attendees = new backup_nested_element('attendees', array('id'), array(
-            'name', 'intro', 'introformat', 'display'));
+            'name', 'intro', 'introformat', 'timecard', 'autosignout', 'defaultview', 'lockview',
+            'showroster', 'kioskmode', 'kioskbuttons', 'iplock', 'searchfields', 'showgroups'));
 
         // Define sources.
         $attendees->set_source_table('attendees', array('id' => backup::VAR_ACTIVITYID));
