@@ -219,8 +219,7 @@ function attendees_get_coursemodule_info($coursemodule) {
     global $CFG, $DB;
     require_once("$CFG->libdir/resourcelib.php");
 
-    if (!$attendees = $DB->get_record('attendees', array('id' => $coursemodule->instance),
-            'id, name, intro, introformat')) {
+    if (!$attendees = $DB->get_record('attendees', array('id' => $coursemodule->instance))) {
         return null;
     }
 
@@ -230,10 +229,6 @@ function attendees_get_coursemodule_info($coursemodule) {
     if ($coursemodule->showdescription) {
         // Convert intro to html. Do not filter cached version, filters run at display time.
         $info->content = format_module_intro('attendees', $attendees, $coursemodule->id, false);
-    }
-
-    if ($attendees->display != RESOURCELIB_DISPLAY_POPUP) {
-        return $info;
     }
 
     $fullurl = "$CFG->wwwroot/mod/attendees/view.php?id=$coursemodule->id";
