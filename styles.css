@@ -107,7 +107,7 @@ a.attendees_otherinout_button:hover {
     padding: 50px;
 }
 
-body {
+.attendees_refreshable {
     -webkit-user-select: none;
     -moz-user-select: -moz-none;
     -ms-user-select: none;

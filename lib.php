@@ -231,11 +231,6 @@ function attendees_get_coursemodule_info($coursemodule) {
         $info->content = format_module_intro('attendees', $attendees, $coursemodule->id, false);
     }
 
-    $fullurl = "$CFG->wwwroot/mod/attendees/view.php?id=$coursemodule->id";
-
-    $wh = "toolbar=no,location=no,menubar=no,copyhistory=no,status=no,directories=no,scrollbars=yes,resizable=yes";
-    $info->onclick = "window.open('$fullurl', '', '$wh'); return false;";
-
     return $info;
 }
 
