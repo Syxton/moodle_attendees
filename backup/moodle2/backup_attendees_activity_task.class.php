@@ -54,16 +54,6 @@ class backup_attendees_activity_task extends backup_activity_task {
     public static function encode_content_links($content) {
         global $CFG;
 
-        $base = preg_quote($CFG->wwwroot, "/");
-
-        // Link to the list of pages.
-        $search = "/(".$base."\/mod\/attendees\/index.php\?id\=)([0-9]+)/";
-        $content = preg_replace($search, '$@PAGEINDEX*$2@$', $content);
-
-        // Link to attendees view by moduleid.
-        $search = "/(".$base."\/mod\/attendees\/view.php\?id\=)([0-9]+)/";
-        $content = preg_replace($search, '$@PAGEVIEWBYID*$2@$', $content);
-
         return $content;
     }
 }

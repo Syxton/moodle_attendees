@@ -65,11 +65,7 @@ class restore_attendees_activity_task extends restore_activity_task {
     public static function define_decode_rules() {
         $rules = array();
 
-        $rules[] = new restore_decode_rule('PAGEVIEWBYID', '/mod/attendees/view.php?id=$1', 'course_module');
-        $rules[] = new restore_decode_rule('PAGEINDEX', '/mod/attendees/index.php?id=$1', 'course');
-
         return $rules;
-
     }
 
     /**
