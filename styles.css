@@ -57,8 +57,12 @@ a.attendees_otherinout_button {
     outline: none;
 }
 
-a.attendees_otherinout_button:hover {
-    color: rgb(158, 210, 240);
+.attendees_status_in a.attendees_otherinout_button:hover {
+    color: rgb(255, 60, 46);
+}
+
+.attendees_status_out a.attendees_otherinout_button:hover {
+    color: rgb(71, 182, 233);
 }
 
 .attendees_otherinout_button .icon {

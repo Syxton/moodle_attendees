@@ -126,5 +126,5 @@ $content = format_text($content, FORMAT_HTML, $formatoptions);
         }, 5000);
     </script>';
 
-echo $OUTPUT->box($content, "generalbox center clearfix");
+echo $OUTPUT->box($content, "center");
 echo $OUTPUT->footer();
