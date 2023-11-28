@@ -584,7 +584,6 @@ function attendees_lookup($attendees, $code) {
     $founduser = array();
     foreach ($users as $user) {
         foreach ($searchfields as $field) {
-            echo $user->$field . " = $code ?<br />";
             if ($user->$field == $code) {
                 $founduser[] = $user;
                 break;
@@ -597,7 +596,6 @@ function attendees_lookup($attendees, $code) {
     } else { // Exactly 1 matching user.
         return $founduser[0]->id;
     }
-
 }
 
 /**
