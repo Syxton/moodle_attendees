@@ -43,4 +43,12 @@ if ($ADMIN->fulltree) {
         get_string('iplock', 'attendees'), get_string('iplockexplain', 'attendees'), 0));
     $settings->add(new admin_setting_configcheckbox('attendees/kioskbuttons',
         get_string('kioskbuttons', 'attendees'), get_string('kioskbuttonsexplain', 'attendees'), 0));
+    $searchfields = ['idnumber' => get_string("idnumber"),
+                     'email' => get_string("email"),
+                     'username' => get_string("username"),
+                     'phone1' => get_string("phone1"),
+                     'phone2' => get_string("phone2"),
+    ];
+    $settings->add(new admin_setting_configmultiselect('attendees/searchfields', get_string('searchfields', 'attendees'),
+        get_string('searchfieldsexplain', 'attendees'), array_keys($searchfields), $searchfields));
 }

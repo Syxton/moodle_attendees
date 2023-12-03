@@ -30,6 +30,7 @@ $id      = optional_param('id', 0, PARAM_INT); // Course Module ID.
 $userid  = optional_param('userid', 0, PARAM_INT); // User ID ID.
 $tab     = optional_param('tab', null, PARAM_ALPHANUM);
 $code    = optional_param('code', null, PARAM_RAW);
+$message = "";
 
 if (!$cm = get_coursemodule_from_id('attendees', $id)) {
     throw new \moodle_exception('invalidcoursemodule');
@@ -42,6 +43,7 @@ require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 
 require_capability('mod/attendees:view', $context);
+
 // Check if attendees has sign in/out enabled.
 if ($attendees->timecard) {
     if ($userid) { // Attempt to sign in / out someone else with userid.

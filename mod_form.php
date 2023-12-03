@@ -82,6 +82,7 @@ class mod_attendees_mod_form extends moodleform_mod {
         $mform->addElement('advcheckbox', 'kioskbuttons', get_string('kioskbuttons', 'attendees'));
         $mform->setDefault('kioskbuttons', $config->kioskbuttons);
         $mform->hideIf('kioskbuttons', 'kioskmode', 'eq', 0);
+        $mform->hideIf('kioskbuttons', 'timecard', 'eq', 0);
 
         $searchfields = ['idnumber' => get_string("idnumber"),
                          'email' => get_string("email"),
@@ -92,8 +93,9 @@ class mod_attendees_mod_form extends moodleform_mod {
         $options = ['multiple' => true,
                     'noselectionstring' => get_string('allareas', 'search'),
         ];
-        $mform->addElement('autocomplete', 'searchfields', get_string('searcharea', 'search'), $searchfields, $options);
+        $mform->addElement('autocomplete', 'searchfields', get_string('searchfields', 'attendees'), $searchfields, $options);
         $mform->setDefault('searchfields', $config->searchfields);
+        $mform->hideIf('searchfields', 'kioskmode', 'eq', 0);
 
         $mform->addElement('header', 'timecardhdr', get_string('timecard', 'attendees'));
         $mform->addElement('advcheckbox', 'timecard', get_string('timecardenabled', 'attendees'));
@@ -101,9 +103,11 @@ class mod_attendees_mod_form extends moodleform_mod {
 
         $mform->addElement('advcheckbox', 'autosignout', get_string('autosignout', 'attendees'));
         $mform->setDefault('autosignout', $config->autosignout);
+        $mform->hideIf('autosignout', 'timecard', 'eq', 0);
 
         $mform->addElement('advcheckbox', 'iplock', get_string('iplock', 'attendees'));
         $mform->setDefault('iplock', $config->iplock);
+        $mform->hideIf('iplock', 'timecard', 'eq', 0);
 
         $this->standard_coursemodule_elements();
 

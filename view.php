@@ -53,8 +53,6 @@ require_capability('mod/attendees:view', $context);
 // Completion and trigger events.
 attendees_view($attendees, $course, $cm, $context);
 
-$PAGE->set_url('/mod/attendees/view.php', ['id' => $cm->id]);
-
 $options = empty($attendees->displayoptions) ? [] : (array) unserialize_array($attendees->displayoptions);
 
 $activityheader = ['hidecompletion' => false];
@@ -64,6 +62,7 @@ if (empty($options['printintro'])) {
 
 $PAGE->set_title($course->shortname.': '.$attendees->name);
 $PAGE->set_heading($course->fullname);
+$PAGE->set_url('/mod/attendees/view.php', ['id' => $cm->id]);
 $PAGE->set_activity_record($attendees);
 $PAGE->add_body_class('limitedwidth');
 

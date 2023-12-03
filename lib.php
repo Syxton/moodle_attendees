@@ -105,7 +105,6 @@ function attendees_add_instance($data, $mform = null) {
 
     $data->searchfields = serialize(clean_param_array($data->searchfields, PARAM_ALPHANUMEXT));
     $options = [];
-    $options['printintro']       = $data->printintro;
     $options['timecard']         = $data->timecard;
     $options['autosignout']      = $data->autosignout;
     $options['defaultview']      = $data->defaultview;
@@ -143,7 +142,6 @@ function attendees_update_instance($data, $mform) {
     $data->searchfields = serialize(clean_param_array($data->searchfields, PARAM_ALPHANUMEXT));
 
     $options = [];
-    $options['printintro']       = $data->printintro;
     $options['timecard']         = $data->timecard;
     $options['autosignout']      = $data->autosignout;
     $options['defaultview']      = $data->defaultview;
@@ -201,8 +199,7 @@ function attendees_cm_info_dynamic(cm_info $cm) {
     $viewrosters = has_capability('mod/attendees:viewrosters', $context);
     $attendees = $DB->get_record('attendees', ['id' => $cm->instance]);
 
-    if (!$viewrosters && !$attendees->showroster &&
-        !$attendees->timecard && !$attendees->kioskmode) {
+    if (!$viewrosters && $attendees->kioskmode) {
         $cm->set_no_view_link();
     }
 }
@@ -240,7 +237,7 @@ function attendees_get_coursemodule_info($coursemodule) {
  * @param stdClass $parentcontext Block's parent context
  * @param stdClass $currentcontext Current context of block
  */
-function attendees_attendees_type_list($pagetype, $parentcontext, $currentcontext) {
+function attendees_page_type_list($pagetype, $parentcontext, $currentcontext) {
     $moduleattendeestype = ['mod-attendees-*' => get_string('attendees-mod-attendees-x', 'attendees')];
     return $moduleattendeestype;
 }
@@ -302,26 +299,7 @@ function mod_attendees_core_calendar_provide_event_action(calendar_event $event,
                                                       \core_calendar\action_factory $factory, $userid = 0) {
     global $USER;
 
-    if (empty($userid)) {
-        $userid = $USER->id;
-    }
-
-    $cm = get_fast_modinfo($event->courseid, $userid)->instances['attendees'][$event->instance];
-
-    $completion = new \completion_info($cm->get_course());
-
-    $completiondata = $completion->get_data($cm, false, $userid);
-
-    if ($completiondata->completionstate != COMPLETION_INCOMPLETE) {
-        return null;
-    }
-
-    return $factory->create_instance(
-        get_string('view'),
-        new \moodle_url('/mod/attendees/view.php', ['id' => $cm->id]),
-        1,
-        true
-    );
+    return null;
 }
 
 /**
@@ -340,7 +318,8 @@ function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0, $refresh 
     $viewrosters = has_capability('mod/attendees:viewrosters', $context);
 
     $content = "";
-    if (!$viewrosters && is_enrolled($context, $USER, 'mod/attendees:signinout', true) && $attendees->timecard && !$refresh) {
+    if (!$viewrosters && !$attendees->kioskmode && $attendees->timecard && !$refresh
+        && is_enrolled($context, $USER, 'mod/attendees:signinout', true)) {
         $content .= attendees_sign_inout_button($cm, $tab);
     }
 
@@ -389,6 +368,8 @@ function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0, $refresh 
         } else {
             $content .= attendees_roster_view($cm, $users, $tab, $refresh);
         }
+    } else {
+        $content .= attendees_roster_view($cm, [$USER], $tab, $refresh);
     }
     return $content;
 }
@@ -649,7 +630,8 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
     $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab";
     $output = "";
 
-    if ($attendees->kioskmode && !$refresh) { // Add search mode for kiosk.
+    // Add search mode for kiosk with timecards.
+    if ($attendees->kioskmode && $attendees->timecard && !$refresh) {
         $output .= '<div class="attendees_usersearch">
                         <form method="get" action="' . $url . '" style="width: 450px;margin: auto;">
                             <input type="hidden"
@@ -686,7 +668,10 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
 
     $output .= '<div class="attendees_refreshable">';
     foreach ($users as $user) {
-        $status = attendees_current_status($cm, $user);
+        $status = "out";
+        if ($attendees->timecard) {
+            $status = attendees_current_status($cm, $user);
+        }
         $output .= '<div class="attendees_userblock attendees_status_'. $status . '">';
 
         // Only show icons if timecard is enabled and has permissions.
