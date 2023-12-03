@@ -51,9 +51,9 @@ class restore_attendees_activity_task extends restore_activity_task {
      * processed by the link decoder
      */
     public static function define_decode_contents() {
-        $contents = array();
+        $contents = [];
 
-        $contents[] = new restore_decode_content('attendees', array('intro'), 'attendees');
+        $contents[] = new restore_decode_content('attendees', ['intro'], 'attendees');
 
         return $contents;
     }
@@ -63,7 +63,7 @@ class restore_attendees_activity_task extends restore_activity_task {
      * to the activity to be executed by the link decoder
      */
     public static function define_decode_rules() {
-        $rules = array();
+        $rules = [];
 
         return $rules;
     }
@@ -75,7 +75,7 @@ class restore_attendees_activity_task extends restore_activity_task {
      * of restore_log_rule objects
      */
     public static function define_restore_log_rules() {
-        $rules = array();
+        $rules = [];
 
         $rules[] = new restore_log_rule('attendees', 'add', 'view.php?id={course_module}', '{attendees}');
         $rules[] = new restore_log_rule('attendees', 'update', 'view.php?id={course_module}', '{attendees}');
@@ -95,7 +95,7 @@ class restore_attendees_activity_task extends restore_activity_task {
      * activity level. All them are rules not linked to any module instance (cmid = 0)
      */
     public static function define_restore_log_rules_for_course() {
-        $rules = array();
+        $rules = [];
 
         $rules[] = new restore_log_rule('attendees', 'view all', 'index.php?id={course}', null);
 

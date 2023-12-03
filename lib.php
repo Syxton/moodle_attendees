@@ -60,7 +60,7 @@ function attendees_reset_userdata($data) {
     // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
     // See MDL-9367.
 
-    return array();
+    return [];
 }
 
 /**
@@ -74,7 +74,7 @@ function attendees_reset_userdata($data) {
  * @return array
  */
 function attendees_get_view_actions() {
-    return array('view', 'view all');
+    return ['view', 'view all'];
 }
 
 /**
@@ -88,7 +88,7 @@ function attendees_get_view_actions() {
  * @return array
  */
 function attendees_get_post_actions() {
-    return array('update', 'add');
+    return ['update', 'add'];
 }
 
 /**
@@ -104,7 +104,7 @@ function attendees_add_instance($data, $mform = null) {
     $cmid = $data->coursemodule;
 
     $data->searchfields = serialize(clean_param_array($data->searchfields, PARAM_ALPHANUMEXT));
-    $options = array();
+    $options = [];
     $options['printintro']       = $data->printintro;
     $options['timecard']         = $data->timecard;
     $options['autosignout']      = $data->autosignout;
@@ -120,7 +120,7 @@ function attendees_add_instance($data, $mform = null) {
     $data->id = $DB->insert_record('attendees', $data);
 
     // We need to use context now, so we need to make sure all needed info is already in db.
-    $DB->set_field('course_modules', 'instance', $data->id, array('id' => $cmid));
+    $DB->set_field('course_modules', 'instance', $data->id, ['id' => $cmid]);
 
     $compexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
     \core_completion\api::update_completion_date_event($cmid, 'attendees', $data->id, $compexpected);
@@ -142,7 +142,7 @@ function attendees_update_instance($data, $mform) {
     $data->id    = $data->instance;
     $data->searchfields = serialize(clean_param_array($data->searchfields, PARAM_ALPHANUMEXT));
 
-    $options = array();
+    $options = [];
     $options['printintro']       = $data->printintro;
     $options['timecard']         = $data->timecard;
     $options['autosignout']      = $data->autosignout;
@@ -172,7 +172,7 @@ function attendees_update_instance($data, $mform) {
 function attendees_delete_instance($id) {
     global $DB;
 
-    if (!$attendees = $DB->get_record('attendees', array('id' => $id))) {
+    if (!$attendees = $DB->get_record('attendees', ['id' => $id])) {
         return false;
     }
 
@@ -181,8 +181,8 @@ function attendees_delete_instance($id) {
 
     // Note: all context files are deleted automatically.
 
-    $DB->delete_records('attendees', array('id' => $attendees->id));
-    $DB->delete_records('attendees_timecard', array('aid' => $attendees->id));
+    $DB->delete_records('attendees', ['id' => $attendees->id]);
+    $DB->delete_records('attendees_timecard', ['aid' => $attendees->id]);
 
     return true;
 }
@@ -219,7 +219,7 @@ function attendees_get_coursemodule_info($coursemodule) {
     global $CFG, $DB;
     require_once("$CFG->libdir/resourcelib.php");
 
-    if (!$attendees = $DB->get_record('attendees', array('id' => $coursemodule->instance))) {
+    if (!$attendees = $DB->get_record('attendees', ['id' => $coursemodule->instance])) {
         return null;
     }
 
@@ -241,7 +241,7 @@ function attendees_get_coursemodule_info($coursemodule) {
  * @param stdClass $currentcontext Current context of block
  */
 function attendees_attendees_type_list($pagetype, $parentcontext, $currentcontext) {
-    $moduleattendeestype = array('mod-attendees-*' => get_string('attendees-mod-attendees-x', 'attendees'));
+    $moduleattendeestype = ['mod-attendees-*' => get_string('attendees-mod-attendees-x', 'attendees')];
     return $moduleattendeestype;
 }
 
@@ -255,7 +255,7 @@ function attendees_attendees_type_list($pagetype, $parentcontext, $currentcontex
 function attendees_export_contents($cm, $baseurl) {
     global $DB;
 
-    $contents = $DB->get_record('attendees', array('id' => $cm->instance), '*', MUST_EXIST);
+    $contents = $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
 
     return $contents;
 }
@@ -272,10 +272,9 @@ function attendees_export_contents($cm, $baseurl) {
 function attendees_view($attendees, $course, $cm, $context) {
 
     // Trigger course_module_viewed event.
-    $params = array(
-        'context' => $context,
-        'objectid' => $attendees->id
-    );
+    $params = ['context' => $context,
+               'objectid' => $attendees->id,
+    ];
 
     $event = \mod_attendees\event\course_module_viewed::create($params);
     $event->add_record_snapshot('course_modules', $cm);
@@ -352,7 +351,8 @@ function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0, $refresh 
             $groupid = groups_get_activity_group($cm);
         }
         $allgroups = groups_get_all_groups($cm->course, 0, $cm->groupingid);
-        if (count($allgroups) > 1 && !$refresh) { // Only show selector if there is more than 1 group to show.
+        // Only show selector if there is more than 1 group to show.
+        if (count($allgroups) > 1 && !$refresh && !$attendees->kioskmode) {
             $content .= '<div class="group_selector">' . groups_print_activity_menu($cm, $url, true) . "</div>";
         }
     }
@@ -432,7 +432,7 @@ function attendees_roster_tabs($cm, $tab) {
  */
 function attendees_sign_inout_button($cm, $tab) {
     global $CFG, $USER, $DB, $OUTPUT;
-    $user = $DB->get_record('user', array('id' => $USER->id), '*', MUST_EXIST);
+    $user = $DB->get_record('user', ['id' => $USER->id], '*', MUST_EXIST);
     $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab";
     if (attendees_is_active($user, $cm->instance)) {
         $text = get_string("signout", "attendees");
@@ -454,7 +454,7 @@ function attendees_sign_inout_button($cm, $tab) {
  */
 function attendees_signinout($attendees, $userid) {
     global $DB;
-    $user = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
+    $user = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
     $time = new DateTime("now", core_date::get_server_timezone_object());
     $timestamp = $time->getTimestamp();
 
@@ -567,35 +567,66 @@ function attendees_get_today() {
  * @return string               returns either an output message or user id
  */
 function attendees_lookup($attendees, $code) {
+    global $DB;
+
+    $code = trim($code);
+    if (empty($code)) {
+        return;
+    }
     $cm = get_coursemodule_from_instance('attendees', $attendees->id, 0, false, MUST_EXIST);
     $context = context_module::instance($cm->id);
 
-    $searchfields = (array) unserialize_array($attendees->searchfields);
-    if (empty($searchfields)) { // If empty, search all fields.
-        $searchfields = array('idnumber' => get_string("idnumber"),
-                              'email' => get_string("email"),
-                              'username' => get_string("username"),
-                              'phone1' => get_string("phone1"),
-                              'phone2' => get_string("phone2"));
+    // GROUP MODE.
+    $groupid = []; // By default search ALL groups.
+    if ($groupmode = groups_get_activity_groupmode($cm)) {
+        // See if a signle group is selected for the activity.
+        $groupid = groups_get_activity_group($cm);
+        // If no single group is selected, go back to all groups.
+        $groupid = $groupid === 0 ? [] : $groupid;
     }
 
-    // Get all possible users.
-    $users = get_enrolled_users($context, 'mod/attendees:signinout', 0, 'u.*', 'lastname ASC');
-    $founduser = array();
-    foreach ($users as $user) {
-        foreach ($searchfields as $field) {
-            if ($user->$field == $code) {
-                $founduser[] = $user;
-                break;
-            }
+    // If grouping is set and it contains more than 1 group, groupid should be an array of all groups in the grouping.
+    if ($groupmode && $cm->groupingid && empty($groupid)) {
+        $groups = $DB->get_records_list('groupings_groups', 'groupingid', [$cm->groupingid]);
+        // Build groupid array.
+        foreach ($groups as $g) {
+            $groupid[] = $g->groupid;
         }
     }
 
-    if (count($founduser) !== 1) { // None or more than 1 match.
-        return get_string("codenotfound", "attendees");
-    } else { // Exactly 1 matching user.
-        return $founduser[0]->id;
+    list($esql, $params) = get_enrolled_sql($context, 'mod/attendees:signinout', $groupid, true);
+    $sql = "SELECT u.id
+              FROM {user} u
+              JOIN ($esql) je ON je.id = u.id
+             WHERE u.deleted = 0";
+
+    // Find which user fields we will try to match on.
+    $searchfields = (array) unserialize_array($attendees->searchfields);
+    if (empty($searchfields)) { // If empty, search all fields.
+        $searchfields = ['idnumber', 'email', 'username', 'phone1', 'phone2'];
     }
+
+    // Create search sql and parameters.
+    $searchsql = '';
+    $searchparams = [];
+    for ($sp = 0; $sp < count($searchfields); $sp++) {
+        $searchsql .= empty($searchsql) ? '' : ' OR ';
+        $searchsql .= "u." . $searchfields[$sp] . ' = :code' . $sp;
+        $searchparams["code$sp"] = $code;
+    }
+
+    $sql .= " AND ($searchsql)";
+    $params = array_merge($params, $searchparams);
+
+    // Perform sql search.
+    $results = $DB->get_records_sql($sql, $params);
+
+    // Must match only 1 student.
+    if (count($results) === 1) {
+        return reset($results)->id;
+    }
+
+    return get_string("codenotfound", "attendees");
 }
 
 /**
@@ -646,13 +677,12 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
     $alt = ' alt="' . get_string("signinout", "attendees") . '"';
     $icons = $OUTPUT->pix_icon('a/logout', get_string("signout", "attendees"), 'moodle') .
              $OUTPUT->pix_icon('withoutkey', get_string("signin", "attendees"), 'enrol_self');
-    $options = array(
-        'size' => '100', // Size of image.
-        'link' => !$attendees->kioskmode, // Make image clickable.
-        'alttext' => true, // Add image alt attribute.
-        'class' => "userpicture", // Image class attribute.
-        'visibletoscreenreaders' => false,
-    );
+    $options = ['size' => '100', // Size of image.
+                'link' => !$attendees->kioskmode, // Make image clickable.
+                'alttext' => true, // Add image alt attribute.
+                'class' => "userpicture", // Image class attribute.
+                'visibletoscreenreaders' => false,
+    ];
 
     $output .= '<div class="attendees_refreshable">';
     foreach ($users as $user) {

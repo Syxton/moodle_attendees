@@ -25,21 +25,25 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$logs = array(
-    array('module' => 'attendees',
-          'action' => 'view',
-          'mtable' => 'attendees',
-          'field' => 'name'),
-    array('module' => 'attendees',
-          'action' => 'view all',
-          'mtable' => 'attendees',
-          'field' => 'name'),
-    array('module' => 'attendees',
-          'action' => 'update',
-          'mtable' => 'attendees',
-          'field' => 'name'),
-    array('module' => 'attendees',
-          'action' => 'add',
-          'mtable' => 'attendees',
-          'field' => 'name'),
-);
+$logs = [
+            ['module' => 'attendees',
+             'action' => 'view',
+             'mtable' => 'attendees',
+             'field' => 'name',
+            ],
+            ['module' => 'attendees',
+             'action' => 'view all',
+             'mtable' => 'attendees',
+             'field' => 'name',
+            ],
+            ['module' => 'attendees',
+             'action' => 'update',
+             'mtable' => 'attendees',
+             'field' => 'name',
+            ],
+            ['module' => 'attendees',
+             'action' => 'add',
+             'mtable' => 'attendees',
+             'field' => 'name',
+            ],
+];

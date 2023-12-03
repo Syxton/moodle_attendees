@@ -32,7 +32,7 @@ $p       = optional_param('p', 0, PARAM_INT);
 $tab     = optional_param('tab', null, PARAM_ALPHANUM);
 
 if ($p) {
-    if (!$attendees = $DB->get_record('attendees', array('id' => $p))) {
+    if (!$attendees = $DB->get_record('attendees', ['id' => $p])) {
         throw new \moodle_exception('invalidaccessparameter');
     }
     $cm = get_coursemodule_from_instance('attendees', $attendees->id, $attendees->course, false, MUST_EXIST);
@@ -41,10 +41,10 @@ if ($p) {
     if (!$cm = get_coursemodule_from_id('attendees', $id)) {
         throw new \moodle_exception('invalidcoursemodule');
     }
-    $attendees = $DB->get_record('attendees', array('id' => $cm->instance), '*', MUST_EXIST);
+    $attendees = $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
 }
 
-$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+$course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
@@ -53,7 +53,7 @@ require_capability('mod/attendees:view', $context);
 // Completion and trigger events.
 attendees_view($attendees, $course, $cm, $context);
 
-$PAGE->set_url('/mod/attendees/view.php', array('id' => $cm->id));
+$PAGE->set_url('/mod/attendees/view.php', ['id' => $cm->id]);
 
 $options = empty($attendees->displayoptions) ? [] : (array) unserialize_array($attendees->displayoptions);
 
@@ -95,7 +95,7 @@ $formatoptions->overflowdiv = true;
 $formatoptions->context = $context;
 $content = format_text($content, FORMAT_HTML, $formatoptions);
 
-    $content .= '
+$content .= '
     <iframe id="attendees_keepalive" src="' . $CFG->wwwroot . '"></iframe>
     <script>
         window.setInterval(() => {
@@ -105,6 +105,10 @@ $content = format_text($content, FORMAT_HTML, $formatoptions);
         jQuery(document).bind("contextmenu", function(e) {
             return false;
         });
+
+        window.setInterval(() => {
+            $(".notifications button.close").click();
+        }, 5000);
 
         window.setInterval(() => {
             $.ajax({
@@ -123,7 +127,7 @@ $content = format_text($content, FORMAT_HTML, $formatoptions);
                     console.log("Request: " + JSON.stringify(request));
                 }
             });
-        }, 5000);
+        }, 10000);
     </script>';
 
 echo $OUTPUT->box($content, "center");

@@ -26,22 +26,22 @@ require('../../config.php');
 
 $id = required_param('id', PARAM_INT); // Course id.
 
-$course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
+$course = $DB->get_record('course', ['id' => $id], '*', MUST_EXIST);
 
 require_course_login($course, true);
 $PAGE->set_pagelayout('incourse');
 
 // Trigger instances list viewed event.
-$event = \mod_attendees\event\course_module_instance_list_viewed::create(array('context' => context_course::instance($course->id)));
+$event = \mod_attendees\event\course_module_instance_list_viewed::create(['context' => context_course::instance($course->id)]);
 $event->add_record_snapshot('course', $course);
 $event->trigger();
 
-$strpage         = get_string('modulename', 'attendees');
-$strpages        = get_string('modulenameplural', 'attendees');
-$strname         = get_string('name');
-$strintro        = get_string('moduleintro');
+$strpage   = get_string('modulename', 'attendees');
+$strpages  = get_string('modulenameplural', 'attendees');
+$strname   = get_string('name');
+$strintro  = get_string('moduleintro');
 
-$PAGE->set_url('/mod/attendees/index.php', array('id' => $course->id));
+$PAGE->set_url('/mod/attendees/index.php', ['id' => $course->id]);
 $PAGE->set_title($course->shortname.': '.$strpages);
 $PAGE->set_heading($course->fullname);
 $PAGE->navbar->add($strpages);
@@ -59,11 +59,11 @@ $table->attributes['class'] = 'generaltable mod_index';
 
 if ($usesections) {
     $strsectionname = get_string('sectionname', 'format_'.$course->format);
-    $table->head  = array ($strsectionname, $strname, $strintro);
-    $table->align = array ('center', 'left', 'left');
+    $table->head  = [$strsectionname, $strname, $strintro];
+    $table->align = ['center', 'left', 'left'];
 } else {
-    $table->head  = array ($strname, $strintro);
-    $table->align = array ('left', 'left');
+    $table->head  = [$strname, $strintro];
+    $table->align = ['left', 'left'];
 }
 
 $modinfo = get_fast_modinfo($course);
@@ -85,10 +85,10 @@ foreach ($pages as $attendees) {
 
     $class = $attendees->visible ? '' : 'class="dimmed"'; // Hidden modules are dimmed.
 
-    $table->data[] = array (
-        $printsection,
-        "<a $class href=\"view.php?id=$cm->id\">".format_string($attendees->name)."</a>",
-        format_module_intro('attendees', $attendees, $cm->id));
+    $table->data[] = [
+                $printsection,
+                "<a $class href=\"view.php?id=$cm->id\">".format_string($attendees->name)."</a>",
+                format_module_intro('attendees', $attendees, $cm->id)];
 }
 
 echo html_writer::table($table);

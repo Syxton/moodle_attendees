@@ -36,7 +36,7 @@ class restore_attendees_activity_structure_step extends restore_activity_structu
      * @return stdClass     attendees object
      */
     protected function define_structure() {
-        $paths = array();
+        $paths = [];
         $paths[] = new restore_path_element('attendees', '/activity/attendees');
 
         // Return the paths wrapped into standard activity structure.

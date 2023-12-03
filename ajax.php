@@ -34,18 +34,18 @@ if (!$cm = get_coursemodule_from_id('attendees', $id)) {
     throw new \moodle_exception('invalidcoursemodule');
 }
 
-$attendees = $DB->get_record('attendees', array('id' => $cm->instance), '*', MUST_EXIST);
-$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+$attendees = $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
+$course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 
 require_capability('mod/attendees:view', $context);
 
-$json = json_encode(array());
+$json = json_encode([]);
 
 // Refresh list of users.
-$data = array(attendees_get_ui($cm, $attendees, $tab, $group, true));
+$data = [attendees_get_ui($cm, $attendees, $tab, $group, true)];
 $json = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
 
 echo $json;

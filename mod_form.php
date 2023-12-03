@@ -47,7 +47,7 @@ class mod_attendees_mod_form extends moodleform_mod {
         $config = get_config('attendees');
 
         $mform->addElement('header', 'general', get_string('general', 'form'));
-        $mform->addElement('text', 'name', get_string('name'), array('size' => '48'));
+        $mform->addElement('text', 'name', get_string('name'), ['size' => '48']);
         if (!empty($CFG->formatstringstriptags)) {
             $mform->setType('name', PARAM_TEXT);
         } else {
@@ -60,10 +60,9 @@ class mod_attendees_mod_form extends moodleform_mod {
         $mform->addElement('header', 'appearancehdr', get_string('appearance'));
 
         // Number of attempts.
-        $defaultviewoptions = [
-            'all' => get_string('all'),
-            'onlyin' => get_string('onlyin', 'attendees'),
-            'onlyout' => get_string('onlyout', 'attendees')
+        $defaultviewoptions = ['all' => get_string('all'),
+                               'onlyin' => get_string('onlyin', 'attendees'),
+                               'onlyout' => get_string('onlyout', 'attendees'),
         ];
         $mform->addElement('select', 'defaultview', get_string('rosterview', 'attendees'), $defaultviewoptions);
 
@@ -84,15 +83,15 @@ class mod_attendees_mod_form extends moodleform_mod {
         $mform->setDefault('kioskbuttons', $config->kioskbuttons);
         $mform->hideIf('kioskbuttons', 'kioskmode', 'eq', 0);
 
-        $searchfields = array('idnumber' => get_string("idnumber"),
-                              'email' => get_string("email"),
-                              'username' => get_string("username"),
-                              'phone1' => get_string("phone1"),
-                              'phone2' => get_string("phone2"));
-        $options = array(
-            'multiple' => true,
-            'noselectionstring' => get_string('allareas', 'search'),
-        );
+        $searchfields = ['idnumber' => get_string("idnumber"),
+                         'email' => get_string("email"),
+                         'username' => get_string("username"),
+                         'phone1' => get_string("phone1"),
+                         'phone2' => get_string("phone2"),
+        ];
+        $options = ['multiple' => true,
+                    'noselectionstring' => get_string('allareas', 'search'),
+        ];
         $mform->addElement('autocomplete', 'searchfields', get_string('searcharea', 'search'), $searchfields, $options);
         $mform->setDefault('searchfields', $config->searchfields);
 

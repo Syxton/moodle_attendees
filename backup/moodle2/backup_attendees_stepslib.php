@@ -39,12 +39,23 @@ class backup_attendees_activity_structure_step extends backup_activity_structure
         $userinfo = $this->get_setting_value('userinfo');
 
         // Define each element separated.
-        $attendees = new backup_nested_element('attendees', array('id'), array(
-            'name', 'intro', 'introformat', 'timecard', 'autosignout', 'defaultview', 'lockview',
-            'showroster', 'kioskmode', 'kioskbuttons', 'iplock', 'searchfields', 'showgroups'));
+        $attendees = new backup_nested_element('attendees', ['id'], ['name',
+                                                                     'intro',
+                                                                     'introformat',
+                                                                     'timecard',
+                                                                     'autosignout',
+                                                                     'defaultview',
+                                                                     'lockview',
+                                                                     'showroster',
+                                                                     'kioskmode',
+                                                                     'kioskbuttons',
+                                                                     'iplock',
+                                                                     'searchfields',
+                                                                     'showgroups',
+                                                                    ]);
 
         // Define sources.
-        $attendees->set_source_table('attendees', array('id' => backup::VAR_ACTIVITYID));
+        $attendees->set_source_table('attendees', ['id' => backup::VAR_ACTIVITYID]);
 
         // Define file annotations.
         $attendees->annotate_files('mod_attendees', 'intro', null);

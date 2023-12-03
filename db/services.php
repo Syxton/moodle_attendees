@@ -15,15 +15,24 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Attendees module version information
+ * Attendees external functions and service definitions.
  *
  * @package    mod_attendees
- * @copyright  2023 Matt Davidson
+ * @category   external
+ * @copyright  2015 Juan Leyva <juan@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 3.0
  */
 
-defined('MOODLE_INTERNAL') || die();
+defined('MOODLE_INTERNAL') || die;
 
-$plugin->version   = 2023120300;        // The current module version (Date: YYYYMMDDXX).
-$plugin->requires  = 2023041800;        // Requires this Moodle version.
-$plugin->component = 'mod_attendees';
+$functions = [
+    'mod_attendees_view_attendees' => [
+        'classname'     => 'mod_attendees_external',
+        'methodname'    => 'view_attendees',
+        'description'   => 'Simulate the view.php web interface attendees: trigger events, completion, etc...',
+        'type'          => 'write',
+        'capabilities'  => 'mod/attendees:view',
+        'services'      => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+];
