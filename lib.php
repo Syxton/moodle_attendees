@@ -674,6 +674,7 @@ function filteroutusers($attendees, $allusers, $type) : array {
         $timelimit = 0;
     }
 
+    // Find all currently signed in users.
     $sql = "SELECT u.*, tc.aid, tc.event, tc.timelog
               FROM {user} u
         INNER JOIN {attendees_timecard} tc ON u.id = tc.userid
@@ -690,6 +691,7 @@ function filteroutusers($attendees, $allusers, $type) : array {
 
     $activeusers = $DB->get_records_sql($sql, [$attendees->id, 'in', $timelimit, $attendees->id]);
 
+    // A user could have been signed in recently, but removed from a group more recently.
     if ($type == "onlyin") {
         // Verify active users are in the enrolled users list.
         foreach ($activeusers as $id => $auser) {
