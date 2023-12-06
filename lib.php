@@ -722,7 +722,7 @@ function filteroutusers($attendees, $allusers, $type) : array {
                                      AND t.aid = ?
                                      $iplock)
            $iplock
-          ORDER BY u.lastname DESC";
+          ORDER BY u.lastname";
 
     $activeusers = $DB->get_records_sql($sql, [$attendees->id, 'in', $timelimit, $attendees->id]);
 
