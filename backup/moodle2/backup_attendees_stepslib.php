@@ -35,9 +35,6 @@ class backup_attendees_activity_structure_step extends backup_activity_structure
      * @return stdClass     attendees object
      */
     protected function define_structure() {
-        // To know if we are including userinfo.
-        $userinfo = $this->get_setting_value('userinfo');
-
         // Define each element separated.
         $attendees = new backup_nested_element('attendees', ['id'], ['name',
                                                                      'intro',

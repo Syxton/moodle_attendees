@@ -152,13 +152,12 @@ a.attendees_otherinout_button {
 .attendees_groups {
     font-size: .8em;
     color: grey;
-    text-align: left;
+    text-align: center;
 }
 
 .attendees_group {
     display: inline-block;
     margin-bottom: 2px;
-    min-width: 50%;
     padding: 2px 4px;
 }
 

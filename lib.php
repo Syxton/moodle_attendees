@@ -56,10 +56,6 @@ function attendees_supports($feature) {
  * @return array status array
  */
 function attendees_reset_userdata($data) {
-
-    // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
-    // See MDL-9367.
-
     return [];
 }
 
@@ -233,29 +229,15 @@ function attendees_get_coursemodule_info($coursemodule) {
 }
 
 /**
- * Return a list of attendees types
- * @param string $pagetype current attendees type
- * @param stdClass $parentcontext Block's parent context
- * @param stdClass $currentcontext Current context of block
- */
-function attendees_page_type_list($pagetype, $parentcontext, $currentcontext) {
-    $moduleattendeestype = ['mod-attendees-*' => get_string('attendees-mod-attendees-x', 'attendees')];
-    return $moduleattendeestype;
-}
-
-/**
  * Export attendees resource contents
  *
  * @param stdClass $cm      course module object
- * @param string $baseurl   url string
  * @return array            of file content
  */
-function attendees_export_contents($cm, $baseurl) {
+function attendees_export_contents($cm) {
     global $DB;
 
-    $contents = $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
-
-    return $contents;
+    return $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
 }
 
 /**
@@ -283,24 +265,6 @@ function attendees_view($attendees, $course, $cm, $context) {
     // Completion.
     $completion = new completion_info($course);
     $completion->set_module_viewed($cm);
-}
-
-/**
- * This function receives a calendar event and returns the action associated with it, or null if there is none.
- *
- * This is used by block_myoverview in order to display the event appropriately. If null is returned then the event
- * is not displayed on the block.
- *
- * @param calendar_event $event
- * @param \core_calendar\action_factory $factory
- * @param int $userid user id
- * @return \core_calendar\local\event\entities\action_interface|null
- */
-function mod_attendees_core_calendar_provide_event_action(calendar_event $event,
-                                                      \core_calendar\action_factory $factory, $userid = 0) {
-    global $USER;
-
-    return null;
 }
 
 /**

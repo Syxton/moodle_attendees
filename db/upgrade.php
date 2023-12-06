@@ -48,7 +48,5 @@
  * @param int $oldversion   version number of current block
  */
 function xmldb_attendees_upgrade($oldversion) {
-    global $CFG;
-
     return true;
 }

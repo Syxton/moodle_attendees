@@ -52,8 +52,6 @@ class backup_attendees_activity_task extends backup_activity_task {
      * @return string the content with the URLs encoded
      */
     public static function encode_content_links($content) {
-        global $CFG;
-
         return $content;
     }
 }
