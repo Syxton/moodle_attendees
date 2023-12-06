@@ -66,7 +66,13 @@ $PAGE->set_url('/mod/attendees/view.php', ['id' => $cm->id]);
 $PAGE->set_activity_record($attendees);
 $PAGE->add_body_class('limitedwidth');
 
+$viewrosters = has_capability('mod/attendees:viewrosters', $context);
 if ($attendees->kioskmode) {
+    if (!$viewrosters) {
+        // The user doesn't have permission to be here.
+        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        redirect($url);
+    }
     $PAGE->set_pagelayout('secure'); // Reduced header.
 }
 
@@ -77,6 +83,7 @@ if (!$PAGE->activityheader->is_title_allowed()) {
 $PAGE->activityheader->set_attrs($activityheader);
 
 $tab = !$tab ? $attendees->defaultview : $tab;
+$tab = $attendees->lockview ? $attendees->defaultview : $tab;
 
 $content = $OUTPUT->header() . attendees_get_ui($cm, $attendees, $tab, $group);
 

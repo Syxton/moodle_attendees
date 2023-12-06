@@ -201,6 +201,7 @@ function attendees_cm_info_dynamic(cm_info $cm) {
 
     if (!$viewrosters && $attendees->kioskmode) {
         $cm->set_no_view_link();
+        $cm->set_available(false);
     }
 }
 
@@ -318,6 +319,10 @@ function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0, $refresh 
     $viewrosters = has_capability('mod/attendees:viewrosters', $context);
 
     $content = "";
+    // Show single user sign in button if the timecard featuring is being used.
+    // And the user is a student.
+    // And the activity is NOT in kiosk mode (shouldn't get this far).
+    // And it isn't an ajax roster refresh.
     if (!$viewrosters && !$attendees->kioskmode && $attendees->timecard && !$refresh
         && is_enrolled($context, $USER, 'mod/attendees:signinout', true)) {
         $content .= attendees_sign_inout_button($cm, $tab);
@@ -344,24 +349,11 @@ function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0, $refresh 
         $users = get_enrolled_users($context, 'mod/attendees:signinout', $groupid, 'u.*', 'lastname ASC');
     }
 
-    // Sort for active tab.
-    if ($tab !== "all") {
-        if ($tab == "onlyin") {
-            $users = array_filter($users, function($user) use($cm) {
-                return attendees_is_active($user, $cm->instance);
-            });
-        } else {
-            $users = array_filter($users, function($user) use($cm) {
-                return !attendees_is_active($user, $cm->instance);
-            });
-        }
-    }
-
-    // DATA EXPORT LINK.
+    // DATA EXPORT LINK TODO.
 
     if ($viewrosters || $attendees->showroster) {
         if (has_capability('mod/attendees:signinout', $context)) {
-            if (!$attendees->lockview && !$attendees->kioskmode && !$refresh) {
+            if (!$attendees->lockview && !$refresh) {
                 $content .= attendees_roster_tabs($cm, $tab);
             }
             $content .= attendees_roster_view($cm, $users, $tab, $refresh);
@@ -371,6 +363,7 @@ function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0, $refresh 
     } else {
         $content .= attendees_roster_view($cm, [$USER], $tab, $refresh);
     }
+
     return $content;
 }
 
@@ -467,11 +460,7 @@ function attendees_signinout($attendees, $userid) {
  * @return string               return in or out
  */
 function attendees_current_status($cm, $user) {
-    if (attendees_is_active($user, $cm->instance)) {
-        return "in";
-    } else {
-        return "out";
-    }
+    return attendees_is_active($user, $cm->instance) ? "in" : "out";
 }
 
 /**
@@ -666,6 +655,11 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
                 'visibletoscreenreaders' => false,
     ];
 
+    // Reduce users array if possible.
+    if ($tab !== "all") {
+        $users = filteroutusers($attendees, $users, $tab);
+    }
+
     $output .= '<div class="attendees_refreshable">';
     foreach ($users as $user) {
         $status = "out";
@@ -691,6 +685,64 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
     }
     $output .= '</div>';
     return $output;
+}
+
+/**
+ * Filter list of users.
+ *
+ * @param stdClass $attendees   attendees object
+ * @param array $allusers       array of all possible users
+ * @param string $type          selected tab (onlyin, onlyout)
+ * @return array                array of filtered usrs
+ */
+function filteroutusers($attendees, $allusers, $type) : array {
+    global $DB;
+ 
+    $iplock = "";
+    if ($attendees->iplock) {
+        $ip = getremoteaddr();
+        $iplock = "AND ip = '$ip' ";
+    }
+
+    if ($attendees->autosignout) {
+        $timelimit = attendees_get_today();
+    } else {
+        $timelimit = 0;
+    }
+
+    $sql = "SELECT u.*, tc.aid, tc.event, tc.timelog
+              FROM {user} u
+        INNER JOIN {attendees_timecard} tc ON u.id = tc.userid
+             WHERE tc.aid = ?
+               AND tc.event = ?
+               AND tc.timelog >= ?
+               AND tc.timelog IN (SELECT MAX(timelog)
+                                    FROM {attendees_timecard} t
+                                   WHERE t.userid = tc.userid
+                                     AND t.aid = ?
+                                     $iplock)
+           $iplock
+          ORDER BY u.lastname DESC";
+
+    $activeusers = $DB->get_records_sql($sql, [$attendees->id, 'in', $timelimit, $attendees->id]);
+
+    if ($type == "onlyin") {
+        // Verify active users are in the enrolled users list.
+        foreach ($activeusers as $id => $auser) {
+            if (!isset($allusers[$id])) {
+                unset($activeusers[$id]);
+            }
+        }
+        return $activeusers;
+    } else if ($type == "onlyout") {
+        // Subtract the activeusers list from the allusers list.
+        foreach ($activeusers as $id => $auser) {
+            if (isset($allusers[$id])) {
+                unset($allusers[$id]);
+            }
+        }
+    }
+    return $allusers;
 }
 
 /**

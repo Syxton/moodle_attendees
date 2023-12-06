@@ -5,6 +5,8 @@
     border: 1px solid silver;
     margin: 10px;
     vertical-align: top;
+    border-radius: 0px 0px 8px 8px;
+    overflow: hidden;
 }
 
 .attendees_userblock .userinitials,
@@ -41,7 +43,7 @@ a.attendees_otherinout_button {
     display: block;
     height: 30px;
     text-align: left;
-    background: lightgrey;
+    background: rgba(211, 211, 211, 0.5);
     color: white;
 }
 .attendees_userblock a.d-inline-block:active,
@@ -57,8 +59,16 @@ a.attendees_otherinout_button {
     outline: none;
 }
 
+.attendees_status_in a.attendees_otherinout_button {
+    color:#c47d7d;
+}
+
 .attendees_status_in a.attendees_otherinout_button:hover {
-    color: rgb(255, 60, 46);
+    color:#9e3535;
+}
+
+.attendees_status_out a.attendees_otherinout_button {
+    color: white;
 }
 
 .attendees_status_out a.attendees_otherinout_button:hover {
