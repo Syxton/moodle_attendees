@@ -697,7 +697,7 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
  */
 function filteroutusers($attendees, $allusers, $type) : array {
     global $DB;
- 
+
     $iplock = "";
     if ($attendees->iplock) {
         $ip = getremoteaddr();

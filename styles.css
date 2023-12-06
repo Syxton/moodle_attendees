@@ -5,7 +5,7 @@
     border: 1px solid silver;
     margin: 10px;
     vertical-align: top;
-    border-radius: 0px 0px 8px 8px;
+    border-radius: 0 0 8px 8px;
     overflow: hidden;
 }
 
@@ -60,11 +60,11 @@ a.attendees_otherinout_button {
 }
 
 .attendees_status_in a.attendees_otherinout_button {
-    color:#c47d7d;
+    color: #c47d7d;
 }
 
 .attendees_status_in a.attendees_otherinout_button:hover {
-    color:#9e3535;
+    color: #9e3535;
 }
 
 .attendees_status_out a.attendees_otherinout_button {
