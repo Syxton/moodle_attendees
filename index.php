@@ -42,7 +42,7 @@ $strname   = get_string('name');
 $strintro  = get_string('moduleintro');
 
 $PAGE->set_url('/mod/attendees/index.php', ['id' => $course->id]);
-$PAGE->set_title($course->shortname.': '.$strpages);
+$PAGE->set_title($course->shortname . ': '. $strpages);
 $PAGE->set_heading($course->fullname);
 $PAGE->navbar->add($strpages);
 echo $OUTPUT->header();
@@ -85,10 +85,12 @@ foreach ($pages as $attendees) {
 
     $class = $attendees->visible ? '' : 'class="dimmed"'; // Hidden modules are dimmed.
 
-    $table->data[] = [
-                $printsection,
-                "<a $class href=\"view.php?id=$cm->id\">".format_string($attendees->name)."</a>",
-                format_module_intro('attendees', $attendees, $cm->id)];
+    $table->data[] = [$printsection,
+                      "<a $class href=\"view.php?id=$cm->id\">" .
+                          format_string($attendees->name) .
+                      "</a>",
+                      format_module_intro('attendees', $attendees, $cm->id),
+    ];
 }
 
 echo html_writer::table($table);

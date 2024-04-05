@@ -177,3 +177,7 @@ a.attendees_otherinout_button {
     display: inline-block;
     width: 200px;
 }
+
+.attendees_history {
+    float: right;
+}

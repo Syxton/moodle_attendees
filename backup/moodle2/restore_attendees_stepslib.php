@@ -29,7 +29,7 @@
 /**
  * Structure step to restore one attendees activity
  */
-class restore_attendees_activity_structure_step extends restore_activity_structure_step {
+class restore_attendees_activity_step extends restore_activity_structure_step {
 
     /**
      * Defining restore struction.

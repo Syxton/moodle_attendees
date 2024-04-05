@@ -22,21 +22,21 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require('../../config.php');
-require_once($CFG->dirroot.'/mod/attendees/lib.php');
-require_once($CFG->libdir.'/completionlib.php');
+require_once('../../config.php');
+require_once($CFG->dirroot . '/mod/attendees/lib.php');
+require_once($CFG->libdir . '/completionlib.php');
 
 $id      = optional_param('id', 0, PARAM_INT);
 $group   = optional_param('group', 0, PARAM_INT);
 $p       = optional_param('p', 0, PARAM_INT);
 $tab     = optional_param('tab', null, PARAM_ALPHANUM);
+$history = optional_param('h', false, PARAM_BOOL);
 
 if ($p) {
     if (!$attendees = $DB->get_record('attendees', ['id' => $p])) {
         throw new \moodle_exception('invalidaccessparameter');
     }
     $cm = get_coursemodule_from_instance('attendees', $attendees->id, $attendees->course, false, MUST_EXIST);
-
 } else {
     if (!$cm = get_coursemodule_from_id('attendees', $id)) {
         throw new \moodle_exception('invalidcoursemodule');
@@ -66,9 +66,8 @@ $PAGE->set_url('/mod/attendees/view.php', ['id' => $cm->id]);
 $PAGE->set_activity_record($attendees);
 $PAGE->add_body_class('limitedwidth');
 
-$viewrosters = has_capability('mod/attendees:viewrosters', $context);
 if ($attendees->kioskmode) {
-    if (!$viewrosters) {
+    if (!has_capability('mod/attendees:viewrosters', $context)) {
         // The user doesn't have permission to be here.
         $url = new moodle_url('/course/view.php', ['id' => $course->id]);
         redirect($url);
@@ -85,23 +84,21 @@ $PAGE->activityheader->set_attrs($activityheader);
 $tab = !$tab ? $attendees->defaultview : $tab;
 $tab = $attendees->lockview ? $attendees->defaultview : $tab;
 
-$content = $OUTPUT->header() . attendees_get_ui($cm, $attendees, $tab, $group);
+$content = $OUTPUT->header();
 
-if ($attendees->kioskmode) { // Wrap kioskmode to control all content.
-    $content = '<div class="attendees_kioskmode">' .
-                    "<h2>$attendees->name</h2>" .
-                    "<p>$attendees->intro</p>" .
-                    $content .
-                '</div>';
-}
-
-$formatoptions = new stdClass;
-$formatoptions->noclean = true;
-$formatoptions->overflowdiv = true;
-$formatoptions->context = $context;
-$content = format_text($content, FORMAT_HTML, $formatoptions);
-
-$content .= '
+if ($history) {
+    if (has_capability('mod/attendees:viewhistory', $context)) {
+        $attendees->name = get_string('history', 'attendees');
+        $attendees->intro = get_string('historydesc', 'attendees');
+        $content .= attendees_history_ui($cm, $attendees);
+    } else {
+        // The user doesn't have permission to be here.
+        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        redirect($url);
+    }
+} else {
+    $content .= attendees_get_ui($cm, $attendees, $tab, $group);
+    $content .= '
     <iframe id="attendees_keepalive" src="' . $CFG->wwwroot . '"></iframe>
     <script>
         window.setInterval(() => {
@@ -135,6 +132,22 @@ $content .= '
             });
         }, 10000);
     </script>';
+}
+
+if ($attendees->kioskmode) { // Wrap kioskmode to control all content.
+    $content = '<div class="attendees_kioskmode">' .
+                    "<h2>$attendees->name</h2>" .
+                    "<p>$attendees->intro</p>" .
+                    $content .
+                '</div>';
+}
+
+$formatoptions = new stdClass;
+$formatoptions->noclean = true;
+$formatoptions->overflowdiv = true;
+$formatoptions->context = $context;
+$content = format_text($content, FORMAT_HTML, $formatoptions);
 
 echo $OUTPUT->box($content, "center");
 echo $OUTPUT->footer();
+

@@ -29,17 +29,23 @@ $string['contentheader'] = 'Content';
 $string['displayoptions'] = 'Available display options';
 $string['displayselect'] = 'Display';
 $string['displayselectexplain'] = 'Select display type.';
-
-
+$string['duration'] = 'Duration';
+$string['history'] = 'Sign In/Out History';
+$string['historydesc'] = 'View the sign in/out history for any/all users.';
+$string['locations'] = 'Locations';
 $string['modulename'] = 'Attendees';
 $string['modulename_help'] = 'The attendees module enables a teacher to view all students by profile image and/or maintain an active / inactive student roster based on daily sign in/out times.';
 $string['modulename_link'] = 'mod/attendees/view';
 $string['modulenameplural'] = 'Attendeess';
+$string['nosignout'] = 'Did not sign out';
 $string['onlyin'] = 'Only signed in';
 $string['onlyout'] = 'Only signed out';
 $string['optionsheader'] = 'Display options';
+$string['returntoattendees'] = 'Return to Sign In/Out';
 $string['signin'] = 'Sign In';
+$string['signedin'] = 'Signed In';
 $string['signout'] = 'Sign Out';
+$string['signedout'] = 'Signed Out';
 $string['signinout'] = 'Sign in / Out';
 $string['usersearch'] = 'User Search';
 

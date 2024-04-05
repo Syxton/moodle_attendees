@@ -125,8 +125,6 @@ class mod_attendees_mod_form extends moodleform_mod {
 
         if ($this->current && $this->current->coursemodule) {
             $cm = get_coursemodule_from_instance('attendees', $this->current->id, 0, false, MUST_EXIST);
-            $ctx = context_module::instance($cm->id);
-
             $attendees = $DB->get_record('attendees', ['id' => $cm->instance]);
             $defaultvalues['searchfields'] = (array) unserialize_array($attendees->searchfields);
         }

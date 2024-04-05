@@ -313,8 +313,16 @@ function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0, $refresh 
         $users = get_enrolled_users($context, 'mod/attendees:signinout', $groupid, 'u.*', 'lastname ASC');
     }
 
-    // DATA EXPORT LINK TODO.
+    // Data History link.
+    if (!$refresh && $attendees->timecard && has_capability('mod/attendees:viewhistory', $context)) {
+        $content .= '<div class="attendees_history">
+                        <a href="view.php?id=' . $cm->id . '&h=true">' .
+                            get_string('history', 'mod_attendees') .
+                    '</a>
+                    </div>';
+    }
 
+    // Roster.
     if ($viewrosters || $attendees->showroster) {
         if (has_capability('mod/attendees:signinout', $context)) {
             if (!$attendees->lockview && !$refresh) {
@@ -729,4 +737,307 @@ function attendees_list_user_groups($cm, $attendees, $userid) : string {
     }
 
     return '<div class="attendees_groups">' . $grouplist . '</div>';
+}
+
+/**
+ * Provides the UI for the attendees history view.
+ *
+ * @param cm_info $cm The course module object.
+ * @param stdClass $attendees The attendees object.
+ * @return string The rendered output.
+ */
+function attendees_history_ui($cm, $attendees) {
+    // URL for the main view of the attendees module.
+    $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
+
+    $content = '';
+
+    // Back to main view.
+    $content .= '<div>
+                    <a href="' . $url . '">' .
+                            '<strong>' . get_string('returntoattendees', 'attendees') . '</strong>' .
+                    '</a>
+                    <br><br>
+                </div>';
+    $content .= '<div style="max-width:600px;margin:auto;">';
+
+    // Instantiate the myform form from within the plugin.
+    $mform = new \mod_attendees\form\historyform(null, ['cm' => $cm]);
+    $formdata = null;
+    $vars = ['h_to' => 0, 'h_from' => 0, 'h_user' => 0, 'h_locations' => 0];
+
+    // Form processing and displaying is done here.
+    if ($mform->is_cancelled()) {
+        // If the cancel element was pressed, then exit early.
+        return $content;
+    } else if ($formdata = $mform->get_data()) {
+        // When the form is submitted, and the data is successfully validated,
+        // the `get_data()` function will return the data posted in the form.
+        $vars['h_from'] = isset($formdata->h_from) ? $formdata->h_from : 0;
+        $vars['h_to'] = isset($formdata->h_to) ? $formdata->h_to : 0;
+        $vars['h_user'] = !empty($formdata->h_user) ? $formdata->h_user : 0;
+        $vars['h_locations'] = !empty($formdata->h_locations) ? $formdata->h_locations : 0;
+    }
+
+    // Set any default data (if any).
+    $mform->set_data($formdata);
+
+    // Display the form.
+    $content .= $mform->render();
+
+    $content .= '</div>';
+
+    // Get history from database.
+    $content .= get_history($attendees, $vars);
+
+    return $content;
+}
+
+/**
+ * Retrieve the attendees history from the database.
+ *
+ * This function retrieves the attendees history from the database,
+ * based on the given start and end dates, and user(s).
+ *
+ * @param stdClass $attendees The attendees object.
+ * @param array $vars An array of query parameters, containing the following:
+ *     - `h_from`: The start time for the query (optional).
+ *     - `h_to`: The end time for the query (optional).
+ *     - `h_user`: The user(s) for the query (optional).
+ * @return string The HTML table containing the history.
+ */
+function get_history($attendees, $vars) {
+    global $DB;
+
+    // Initialize the query parameters.
+    $params['id'] = $attendees->id;
+
+    // Initialize the SQL WHERE conditions.
+    $timesql = $usersql = $ipsql = '';
+
+    // If times are given.
+    if ($vars['h_from'] || $vars['h_to']) {
+        if ($vars['h_from']) {
+            $timesql .= ' AND t.timelog >= :from';
+            $params['from'] = $vars['h_from'];
+        }
+
+        if ($vars['h_to']) {
+            $timesql .= ' AND t.timelog <= :to';
+            $params['to'] = $vars['h_to'];
+        }
+    }
+
+    // If user is given.
+    if ($vars['h_user']) {
+        [$usql, $up] = $DB->get_in_or_equal($vars['h_user'], SQL_PARAMS_NAMED, 'user');
+        $usersql = "AND t.userid {$usql}";
+        $params += $up;
+    }
+
+    // If location is given.
+    if ($vars['h_locations']) {
+        [$locsql, $locp] = $DB->get_in_or_equal($vars['h_locations'], SQL_PARAMS_NAMED, 'location');
+        $ipsql = "AND t.ip {$locsql}";
+        $params += $locp;
+    }
+
+    // Build the SQL query.
+    $sql = "SELECT t.timelog, t.event, u.id, u.firstname, u.lastname, t.aid, t.ip
+            FROM {attendees_timecard} t
+            JOIN {user} u ON u.id = t.userid
+            WHERE t.aid = :id
+            AND t.event = 'in'
+            $timesql
+            $usersql
+            $ipsql
+            ORDER BY t.timelog DESC
+            LIMIT 200";
+
+    // Execute the SQL query and get the results.
+    if ($results = $DB->get_records_sql($sql, $params)) {
+        // Convert the results to a HTML table and return it as the answer.
+        return display_history($results, $attendees);
+    } else {
+        // If the query returned no results, set the answer to
+        // indicate that.
+        return 'No results found.';
+    }
+}
+
+/**
+ * Convert the given history into an HTML table.
+ *
+ * This function takes an array of records from the attendees_timecard table,
+ * with the fields 'firstname', 'lastname', 'timelog', 'event' and 'id', and
+ * returns an HTML table containing the history.
+ *
+ * @param array $history An array of records from the attendees_timecard table.
+ * @param stdClass $attendees The attendees object.
+ *
+ * @return string An HTML table containing the history.
+ */
+function display_history(array $history, stdClass $attendees): string {
+    $return = '<table style="width:100%" class="generaltable">';
+    $return .= '<tr>
+                    <th>' . get_string('user') . '</th>
+                    <th>' . get_string('signedin', 'attendees') . '</th>
+                    <th>' . get_string('signedout', 'attendees') . '</th>
+                    <th>' . get_string('duration', 'attendees') . '</th></tr>';
+
+    // Convert the results to an HTML table.
+    foreach ($history as $login) {
+        $return .= '<tr>
+                       <td>' . $login->firstname . ' ' . $login->lastname . '</td>
+                       <td>' . date("F j, Y, g:i a", $login->timelog) . '</td>';
+
+        // Get next sign in and next signouts.
+        $nextin = get_users_next_signin($attendees, $login);
+        $nextout = get_users_next_signout($attendees, $login);
+
+        // If signed out time is today, get duration.
+        if ($nextout) {
+            // If next signin is between last signin and signed out time, assume autosignout.
+            if ($nextin && ($nextin->timelog > $login->timelog && $nextin->timelog < $nextout->timelog)) {
+                $return .= '<td>' .
+                                get_string('nosignout', 'attendees') .
+                            '</td><td>--</td>';
+            } else {
+                $return .= '<td>' .
+                                date("F j, Y, g:i a", $nextout->timelog) .
+                            '</td><td>' .
+                                get_duration($nextout->timelog - $login->timelog) .
+                            '</td>';
+            }
+        } else { // Didn't log out.
+            // If signed in time is today, get duration.
+            if (date("F j, Y") == date("F j, Y", $login->timelog)) {
+                $return .= '<td>' .
+                                get_string('signedin', 'attendees') .
+                            '</td><td>' .
+                                get_duration(time() - $login->timelog) .
+                            '</td>';
+            } else {
+                // If not autosigned out, show duration.
+                if (!$attendees->autosignout) {
+                    if ($nextin) {
+                        $return .= '<td>' .
+                                        get_string('nosignout', 'attendees') .
+                                    '</td><td>--</td>';
+                    } else {
+                        $return .= '<td>' .
+                                        get_string('signedin', 'attendees') .
+                                    '</td><td>' .
+                                        get_duration(time() - $login->timelog) .
+                                    '</td>';
+                    }
+                } else {
+                    $return .= '<td>' . get_string('nosignout', 'attendees') . '</td><td>--</td>';
+                }
+            }
+        }
+
+        $return .= '</tr>';
+    }
+    $return .= '</table>';
+
+    return $return;
+}
+
+/**
+ * Gets the next time the user signed in for the specified attendees event.
+ *
+ * This function takes an attendees object and a user's login record, with the fields 'id' and 'ip',
+ * and returns the next time the user signed in, or false if none found.
+ *
+ * @param stdClass $attendees The attendees object.
+ * @param stdClass $login The user's login object containing their ID and IP address.
+ *
+ * @return stdClass|false The next time the user signed in or false if none found.
+ */
+function get_users_next_signin($attendees, $login) {
+    global $DB;
+
+    $params = [];
+
+    $ipsql = ""; // If iplock is enabled.
+    if ($attendees->iplock) {
+        [$locsql, $locp] = $DB->get_in_or_equal($login->ip, SQL_PARAMS_NAMED, 'ip');
+        $ipsql = " AND t.ip {$locsql}";
+        $params += $locp;
+    }
+
+    // Have they signed in again since? Assume autosignout. Should only happen if autosignout setting has been changed.
+    $sql = "SELECT t.timelog, t.event, t.userid
+              FROM {attendees_timecard} t
+             WHERE t.aid = :id
+            $ipsql
+               AND t.event = 'in'
+               AND t.userid = :userid
+               AND t.timelog > :timein
+          ORDER BY t.timelog ASC
+             LIMIT 1";
+
+    $params['id'] = $attendees->id;
+    $params['userid'] = $login->id;
+    $params['timein'] = $login->timelog;
+
+    return $DB->get_record_sql($sql, $params);
+}
+
+/**
+ * Gets the next time the user signed out for the specified attendees event.
+ *
+ * @param stdClass $attendees The attendees object.
+ * @param stdClass $login The user's login object containing their ID and IP address.
+ *
+ * @return stdClass|false The next time the user signed out or false if none found.
+ */
+function get_users_next_signout($attendees, $login) {
+    global $DB;
+
+    $params = [];
+
+    $ipsql = ""; // If iplock is enabled.
+    if ($attendees->iplock) {
+        [$locsql, $locp] = $DB->get_in_or_equal($login->ip, SQL_PARAMS_NAMED, 'ip');
+        $ipsql = " AND t.ip {$locsql}";
+        $params += $locp;
+    }
+
+    // Get users next logout time.
+    $sql = "SELECT t.timelog, t.event, t.userid
+              FROM {attendees_timecard} t
+             WHERE t.aid = :id
+            $ipsql
+               AND t.event = 'out'
+               AND t.userid = :userid
+               AND t.timelog > :timein
+          ORDER BY t.timelog ASC
+             LIMIT 1";
+
+    $params['id'] = $attendees->id;
+    $params['userid'] = $login->id;
+    $params['timein'] = $login->timelog;
+
+    return $DB->get_record_sql($sql, $params);
+}
+
+/**
+ * Returns a human-readable duration given a number of seconds.
+ *
+ * @param int $seconds The number of seconds to convert.
+ *
+ * @return string A duration in the format H:i:s (hours:minutes:seconds).
+ */
+function get_duration($seconds) {
+    // Convert the number of seconds to a human-readable string.
+    // If seconds are over 24 hours, display the number of days.
+    if ($seconds > 86400) {
+        $days = floor($seconds / 86400);
+        $seconds = $seconds - ($days * 86400);
+        return $days . 'd ' . get_duration($seconds);
+    } else {
+        return gmdate('H\h i\m s\s', $seconds);
+    }
 }

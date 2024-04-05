@@ -48,5 +48,5 @@
  * @param int $oldversion   version number of current block
  */
 function xmldb_attendees_upgrade($oldversion) {
-    return true;
+    return $oldversion ? true : false; // Returns true if a version is given.
 }
