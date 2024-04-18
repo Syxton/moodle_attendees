@@ -30,6 +30,7 @@ $string['displayoptions'] = 'Available display options';
 $string['displayselect'] = 'Display';
 $string['displayselectexplain'] = 'Select display type.';
 $string['duration'] = 'Duration';
+$string['enrolledin'] = 'Enrolled in';
 $string['history'] = 'Sign In/Out History';
 $string['historydesc'] = 'View the sign in/out history for any/all users.';
 $string['locations'] = 'Locations';

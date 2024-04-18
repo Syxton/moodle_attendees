@@ -50,6 +50,10 @@ class historyform extends \moodleform {
         $mform->addElement('hidden', 'h', 'true');
         $mform->setType('h', PARAM_BOOL); // The data type of the element.
 
+        // A hidden field to store the page number.
+        $mform->addElement('hidden', 'h_page', 0);
+        $mform->setType('h_page', PARAM_INT); // The data type of the element.
+
         // From date/time.
         $mform->addElement('date_selector', 'h_from', get_string('from'), ['optional' => true]);
         $mform->setType('h_from', PARAM_INT); // The data type of the element.
@@ -71,6 +75,15 @@ class historyform extends \moodleform {
         ];
         $mform->addElement('autocomplete', 'h_user', get_string('users'), $users, $options);
 
+        // Course enrollment filter.
+        $options = [
+            'multiple' => true,
+            'limittoenrolled' => false,
+            'noselectionstring' => get_string('allcourses', 'search'),
+        ];
+        $mform->addElement('course', 'h_courses', get_string('enrolledin', 'attendees'), $options);
+        $mform->setType('courseids', PARAM_INT);
+
         // Autocomplete field for selecting locations.
         $locations = [];
         if ($alllocations = $this->get_all_locations($cm)) {
@@ -85,7 +98,7 @@ class historyform extends \moodleform {
         $mform->addElement('autocomplete', 'h_locations', get_string('locations', 'attendees'), $locations, $options);
 
         // Submit button.
-        $mform->addElement('submit', 'submitbutton', get_string('search'));
+        $mform->addElement('submit', 'filterattendees', get_string('filter'));
     }
 
     /**

@@ -22,6 +22,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
+$historylimit = 200;
+
 /**
  * List of features supported in Attendees module
  *
@@ -764,7 +768,7 @@ function attendees_history_ui($cm, $attendees) {
     // Instantiate the myform form from within the plugin.
     $mform = new \mod_attendees\form\historyform(null, ['cm' => $cm]);
     $formdata = null;
-    $vars = ['h_to' => 0, 'h_from' => 0, 'h_user' => 0, 'h_locations' => 0];
+    $vars = ['h_to' => 0, 'h_from' => 0, 'h_user' => 0, 'h_locations' => 0, 'h_courses' => 0, 'h_page' => 0];
 
     // Form processing and displaying is done here.
     if ($mform->is_cancelled()) {
@@ -777,6 +781,8 @@ function attendees_history_ui($cm, $attendees) {
         $vars['h_to'] = isset($formdata->h_to) ? $formdata->h_to : 0;
         $vars['h_user'] = !empty($formdata->h_user) ? $formdata->h_user : 0;
         $vars['h_locations'] = !empty($formdata->h_locations) ? $formdata->h_locations : 0;
+        $vars['h_courses'] = !empty($formdata->h_courses) ? $formdata->h_courses : 0;
+        $vars['h_page'] = isset($formdata->h_page) ? $formdata->h_page : 0;
     }
 
     // Set any default data (if any).
@@ -794,70 +800,84 @@ function attendees_history_ui($cm, $attendees) {
 }
 
 /**
- * Retrieve the attendees history from the database.
+ * Get the history of attendees.
  *
- * This function retrieves the attendees history from the database,
- * based on the given start and end dates, and user(s).
+ * This function gets the history of attendees for the given attendees
+ * object and returns it as an HTML table. The query is constructed
+ * from the given query parameters.
  *
  * @param stdClass $attendees The attendees object.
- * @param array $vars An array of query parameters, containing the following:
- *     - `h_from`: The start time for the query (optional).
- *     - `h_to`: The end time for the query (optional).
- *     - `h_user`: The user(s) for the query (optional).
+ * @param array $vars The query parameters.
  * @return string The HTML table containing the history.
  */
-function get_history($attendees, $vars) {
-    global $DB;
+function get_history(stdClass $attendees, array $vars): string {
+    global $DB, $historylimit;
 
     // Initialize the query parameters.
     $params['id'] = $attendees->id;
 
     // Initialize the SQL WHERE conditions.
-    $timesql = $usersql = $ipsql = '';
+    $timesql = $usersql = $ipsql = $ejoin = '';
 
     // If times are given.
-    if ($vars['h_from'] || $vars['h_to']) {
-        if ($vars['h_from']) {
+    if (!empty($vars['h_from']) || isset($vars['h_to'])) {
+        // Add the time condition to the SQL query if times are given.
+        if (!empty($vars['h_from'])) {
             $timesql .= ' AND t.timelog >= :from';
             $params['from'] = $vars['h_from'];
         }
 
-        if ($vars['h_to']) {
+        if (!empty($vars['h_to'])) {
             $timesql .= ' AND t.timelog <= :to';
             $params['to'] = $vars['h_to'];
         }
     }
 
     // If user is given.
-    if ($vars['h_user']) {
+    if (!empty($vars['h_user'])) {
+        // Add the user condition to the SQL query if a user is given.
         [$usql, $up] = $DB->get_in_or_equal($vars['h_user'], SQL_PARAMS_NAMED, 'user');
         $usersql = "AND t.userid {$usql}";
         $params += $up;
     }
 
     // If location is given.
-    if ($vars['h_locations']) {
+    if (!empty($vars['h_locations'])) {
+        // Add the location condition to the SQL query if a location is given.
         [$locsql, $locp] = $DB->get_in_or_equal($vars['h_locations'], SQL_PARAMS_NAMED, 'location');
         $ipsql = "AND t.ip {$locsql}";
         $params += $locp;
     }
 
+    // If courses are given.
+    if (!empty($vars['h_courses'])) {
+        // Add the course condition to the SQL query if a course is given.
+        [$csql, $cp] = $DB->get_in_or_equal($vars['h_courses'], SQL_PARAMS_NAMED, 'courses');
+        $ejoin = "JOIN {user_enrolments} ue ON ue.userid = u.id
+                  JOIN {enrol} e ON (e.id = ue.enrolid AND e.courseid {$csql})";
+        $params += $cp;
+    }
+
+    $pagenum = !empty($vars['h_page']) ? $vars['h_page'] : 0;
+    $offset = $pagenum * $historylimit;
+
     // Build the SQL query.
     $sql = "SELECT t.timelog, t.event, u.id, u.firstname, u.lastname, t.aid, t.ip
             FROM {attendees_timecard} t
             JOIN {user} u ON u.id = t.userid
+            $ejoin
             WHERE t.aid = :id
             AND t.event = 'in'
             $timesql
             $usersql
             $ipsql
             ORDER BY t.timelog DESC
-            LIMIT 200";
+            LIMIT " . ($historylimit + 1) . " OFFSET $offset";
 
     // Execute the SQL query and get the results.
     if ($results = $DB->get_records_sql($sql, $params)) {
         // Convert the results to a HTML table and return it as the answer.
-        return display_history($results, $attendees);
+        return display_history($results, $attendees, $vars);
     } else {
         // If the query returned no results, set the answer to
         // indicate that.
@@ -866,30 +886,74 @@ function get_history($attendees, $vars) {
 }
 
 /**
- * Convert the given history into an HTML table.
+ * Convert an array of login records to an HTML table for display in the history page.
  *
- * This function takes an array of records from the attendees_timecard table,
- * with the fields 'firstname', 'lastname', 'timelog', 'event' and 'id', and
- * returns an HTML table containing the history.
- *
- * @param array $history An array of records from the attendees_timecard table.
+ * @param array $history The array of login records.
  * @param stdClass $attendees The attendees object.
+ * @param array $vars An array of query parameters, containing the following:
+ *     - `h_courses`: The courses for the query (optional).
  *
- * @return string An HTML table containing the history.
+ * @return string The HTML table containing the history.
  */
-function display_history(array $history, stdClass $attendees): string {
-    $return = '<table style="width:100%" class="generaltable">';
+function display_history(array $history, stdClass $attendees, array $vars): string {
+    global $historylimit;
+
+    // Initialize the return string.
+    $return = "";
+    $click = 'document.getElementById(\'filterattendees\').click();';
+    $pageinput = 'document.getElementsByName(\'h_page\')[0].value';
+
+    $count = count($history);
+    if ($vars['h_page'] > 0 || $count > $historylimit) {
+        // Paginated results.
+        $return .= '<div class="pagination">';
+        $return .= '<ul class="pagination" style="margin: 1em auto">';
+
+        if ($vars['h_page'] > 0) {
+            $return .= '<li class="page-item">
+                            <a class="page-link" href="#"
+                               onclick="' . $pageinput . '=0;' . $click . '">'
+                               . get_string('first') .
+                            '</a>
+                        </li>';
+            $return .= '<li class="page-item">
+                            <a class="page-link" href="#"
+                               onclick="' . $pageinput . '=' . ($vars['h_page'] - 1) . ';' . $click . '">'
+                               . get_string('previous') .
+                            '</a>
+                        </li>';
+        }
+
+        if ($count > $historylimit) {
+            $return .= '<li class="page-item">
+                            <a class="page-link" href="#"
+                               onclick="' . $pageinput . '=' . ($vars['h_page'] + 1) . ';' . $click . '">'
+                               . get_string('next') .
+                            '</a>
+                        </li>';
+        }
+
+        $return .= '</ul>';
+        $return .= '</div>';
+    }
+
+    $return .= '<table style="width:100%" class="generaltable">';
+    // Add table headers.
     $return .= '<tr>
-                    <th>' . get_string('user') . '</th>
-                    <th>' . get_string('signedin', 'attendees') . '</th>
-                    <th>' . get_string('signedout', 'attendees') . '</th>
-                    <th>' . get_string('duration', 'attendees') . '</th></tr>';
+        <th>' . get_string('user') . '</th>
+        <th>' . get_string('signedin', 'attendees') . '</th>
+        <th>' . get_string('signedout', 'attendees') . '</th>
+        <th>' . get_string('duration', 'attendees') . '</th>
+    </tr>';
+
+    // Initialize the loop counter.
+    $loop = 0;
 
     // Convert the results to an HTML table.
     foreach ($history as $login) {
         $return .= '<tr>
-                       <td>' . $login->firstname . ' ' . $login->lastname . '</td>
-                       <td>' . date("F j, Y, g:i a", $login->timelog) . '</td>';
+            <td>' . $login->firstname . ' ' . $login->lastname . '</td>
+            <td>' . date("F j, Y, g:i a", $login->timelog) . '</td>';
 
         // Get next sign in and next signouts.
         $nextin = get_users_next_signin($attendees, $login);
@@ -900,36 +964,36 @@ function display_history(array $history, stdClass $attendees): string {
             // If next signin is between last signin and signed out time, assume autosignout.
             if ($nextin && ($nextin->timelog > $login->timelog && $nextin->timelog < $nextout->timelog)) {
                 $return .= '<td>' .
-                                get_string('nosignout', 'attendees') .
-                            '</td><td>--</td>';
+                    get_string('nosignout', 'attendees') .
+                    '</td><td>--</td>';
             } else {
                 $return .= '<td>' .
-                                date("F j, Y, g:i a", $nextout->timelog) .
-                            '</td><td>' .
-                                get_duration($nextout->timelog - $login->timelog) .
-                            '</td>';
+                    date("F j, Y, g:i a", $nextout->timelog) .
+                    '</td><td>' .
+                    get_duration($nextout->timelog - $login->timelog) .
+                    '</td>';
             }
         } else { // Didn't log out.
             // If signed in time is today, get duration.
             if (date("F j, Y") == date("F j, Y", $login->timelog)) {
                 $return .= '<td>' .
-                                get_string('signedin', 'attendees') .
-                            '</td><td>' .
-                                get_duration(time() - $login->timelog) .
-                            '</td>';
+                    get_string('signedin', 'attendees') .
+                    '</td><td>' .
+                    get_duration(time() - $login->timelog) .
+                    '</td>';
             } else {
                 // If not autosigned out, show duration.
                 if (!$attendees->autosignout) {
                     if ($nextin) {
                         $return .= '<td>' .
-                                        get_string('nosignout', 'attendees') .
-                                    '</td><td>--</td>';
+                            get_string('nosignout', 'attendees') .
+                            '</td><td>--</td>';
                     } else {
                         $return .= '<td>' .
-                                        get_string('signedin', 'attendees') .
-                                    '</td><td>' .
-                                        get_duration(time() - $login->timelog) .
-                                    '</td>';
+                            get_string('signedin', 'attendees') .
+                            '</td><td>' .
+                            get_duration(time() - $login->timelog) .
+                            '</td>';
                     }
                 } else {
                     $return .= '<td>' . get_string('nosignout', 'attendees') . '</td><td>--</td>';
@@ -938,6 +1002,11 @@ function display_history(array $history, stdClass $attendees): string {
         }
 
         $return .= '</tr>';
+
+        $loop++;
+        if ($loop >= $historylimit) {
+            break;
+        }
     }
     $return .= '</table>';
 

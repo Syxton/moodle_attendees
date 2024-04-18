@@ -24,4 +24,3 @@ Attendees module is resource for teachers to visually see their course participa
 
 
 TODO:
- * EVERYTHING
