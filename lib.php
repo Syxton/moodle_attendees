@@ -33,21 +33,37 @@ $historylimit = 200;
  * @return mixed True if module supports feature, false if not, null if doesn't know or string for the module purpose.
  */
 function attendees_supports($feature) {
+
+    if (!defined('FEATURE_MOD_PURPOSE')) {
+        define('FEATURE_MOD_PURPOSE', 'mod_purpose');
+    }
+    if (!defined('MOD_PURPOSE_COLLABORATION')) {
+        define('MOD_PURPOSE_COLLABORATION', 'collaboration');
+    }
+
     switch($feature) {
-        case FEATURE_MOD_PURPOSE:
-            return MOD_PURPOSE_INTERFACE;
         case FEATURE_MOD_ARCHETYPE:
-            return MOD_ARCHETYPE_RESOURCE;
+            return MOD_ARCHETYPE_OTHER;
+        case FEATURE_GROUPS:
+            return true;
+        case FEATURE_GROUPINGS:
+            return true;
+        case FEATURE_GROUPMEMBERSONLY:
+            return false;
+        case FEATURE_MOD_INTRO:
+            return true;
         case FEATURE_COMPLETION_TRACKS_VIEWS:
+            return true;
         case FEATURE_GRADE_HAS_GRADE:
+            return false;
         case FEATURE_GRADE_OUTCOMES:
             return false;
         case FEATURE_BACKUP_MOODLE2:
-        case FEATURE_SHOW_DESCRIPTION:
-        case FEATURE_GROUPS:
-        case FEATURE_GROUPINGS:
-        case FEATURE_MOD_INTRO:
             return true;
+        case FEATURE_SHOW_DESCRIPTION:
+            return true;
+        case FEATURE_MOD_PURPOSE:
+            return MOD_PURPOSE_COLLABORATION;
         default:
             return null;
     }

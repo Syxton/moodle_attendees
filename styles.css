@@ -165,7 +165,7 @@ a.attendees_otherinout_button {
     display: none;
 }
 
-.attendees_kioskmode #page-wrapper {
+.cm-type-attendees #page-wrapper {
     height: auto;
 }
 
