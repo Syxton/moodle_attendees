@@ -37,18 +37,18 @@ $event->add_record_snapshot('course', $course);
 $event->trigger();
 
 $strpage   = get_string('modulename', 'attendees');
-$strpages  = get_string('modulenameplural', 'attendees');
 $strname   = get_string('name');
 $strintro  = get_string('moduleintro');
 
 $PAGE->set_url('/mod/attendees/index.php', ['id' => $course->id]);
-$PAGE->set_title($course->shortname . ': '. $strpages);
+$PAGE->set_title($course->shortname . ': '. $strpage);
 $PAGE->set_heading($course->fullname);
-$PAGE->navbar->add($strpages);
+$PAGE->navbar->add($strpage);
 echo $OUTPUT->header();
-echo $OUTPUT->heading($strpages);
+echo $OUTPUT->heading($strpage);
+
 if (!$pages = get_all_instances_in_course('attendees', $course)) {
-    notice(get_string('thereareno', 'moodle', $strpages), "$CFG->wwwroot/course/view.php?id=$course->id");
+    notice(get_string('thereareno', 'moodle', $strpage), "$CFG->wwwroot/course/view.php?id=$course->id");
     exit;
 }
 

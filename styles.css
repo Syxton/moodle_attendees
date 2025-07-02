@@ -87,7 +87,7 @@ a.attendees_otherinout_button {
     padding: 30px;
 }
 
-.attendees_signinout_button .fa-sign-out.icon {
+.attendees_signinout_button .fa-arrow-right-to-bracket.icon {
     -moz-transform: scaleX(-1);
     -o-transform: scaleX(-1);
     -webkit-transform: scaleX(-1);
@@ -102,11 +102,11 @@ a.attendees_otherinout_button {
     text-decoration: none;
 }
 
-.attendees_status_in .fa-sign-in {
+.attendees_status_in .fa-right-to-bracket {
     display: none;
 }
 
-.attendees_status_out .fa-sign-out {
+.attendees_status_out .fa-arrow-right-to-bracket {
     display: none;
 }
 

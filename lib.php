@@ -372,21 +372,28 @@ function attendees_roster_tabs($cm, $tab) {
     $$tab = 'active active_tree_node';
     $url = "$CFG->wwwroot/mod/attendees/view.php?id=$cm->id&tab=";
 
-    return '<div class="attendees_tabs secondary-navigation d-print-none">
-                <nav class="moremenu navigation observed" style="margin: 0">
-                    <ul class="nav more-nav nav-tabs">
-                        <li class="nav-item">
-                            <a href="'.$url.'all" class="nav-link '.$all.'">All Users</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="'.$url.'onlyin" class="nav-link '.$onlyin.'">Active Users</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="'.$url.'onlyout" class="nav-link '.$onlyout.'">Inactive Users</a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>';
+    return '
+    <div class="attendees_tabs secondary-navigation d-print-none">
+        <nav class="moremenu navigation observed" style="margin: 0">
+            <ul class="nav more-nav nav-tabs">
+                <li class="nav-item">
+                    <a href="' . $url . 'all" class="nav-link ' . $all . '">
+                        All Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="' . $url . 'onlyin" class="nav-link ' . $onlyin . '">
+                        Active Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="' . $url . 'onlyout" class="nav-link ' . $onlyout . '">
+                        Inactive Users
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>';
 }
 
 /**
@@ -408,7 +415,12 @@ function attendees_sign_inout_button($cm, $tab) {
         $inorout = $OUTPUT->pix_icon('withoutkey', $text , 'enrol_self') . " $text";
     }
 
-    return "<div style='text-align:center'><a class='attendees_signinout_button' href='$url' alt='$text '>$inorout</a></div>";
+    return '
+        <div style="text-align:center">
+            <a class="attendees_signinout_button" href="' . $url . '" alt="' . $text . '">
+                ' . $inorout . '
+            </a>
+        </div>';
 }
 
 /**
@@ -422,13 +434,13 @@ function attendees_signinout($attendees, $userid) {
     global $DB;
     $user = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
     $time = new DateTime("now", core_date::get_server_timezone_object());
-    $timestamp = $time->getTimestamp();
 
-    $timecard = new stdClass();
-    $timecard->userid = $user->id;
-    $timecard->aid = $attendees->id;
-    $timecard->timelog = $timestamp;
-    $timecard->ip = getremoteaddr();
+    $timecard = (object) [
+        'userid' => $user->id,
+        'aid' => $attendees->id,
+        'timelog' => $time->getTimestamp(),
+        'ip' => getremoteaddr(),
+    ];
 
     if (attendees_is_active($user, $attendees->id)) {
         $timecard->event = "out";
@@ -472,14 +484,16 @@ function attendees_is_active($user, $aid) {
         $iplock = "AND ip = '$ip' ";
     }
 
-    $lastout = $DB->get_record_sql(
-        'SELECT * FROM {attendees_timecard} WHERE aid = ? AND event = ? AND userid = ? ' .$iplock. 'ORDER BY timelog DESC LIMIT 1',
-        [$aid, 'out', $user->id]
-    );
-    $lastin = $DB->get_record_sql(
-        'SELECT * FROM {attendees_timecard} WHERE aid = ? AND event = ? AND userid = ? ' .$iplock. 'ORDER BY timelog DESC LIMIT 1',
-        [$aid, 'in', $user->id]
-    );
+    $sql = "SELECT *
+            FROM {attendees_timecard}
+            WHERE aid = ?
+            AND event = ?
+            AND userid = ?
+            $iplock
+            ORDER BY timelog
+            DESC LIMIT 1";
+    $lastout = $DB->get_record_sql($sql, [$aid, 'out', $user->id]);
+    $lastin = $DB->get_record_sql($sql, [$aid, 'in', $user->id]);
     $today = attendees_get_today();
 
     if (!empty($lastin) || !empty($lastout)) {
@@ -556,12 +570,6 @@ function attendees_lookup($attendees, $code) {
         }
     }
 
-    list($esql, $params) = get_enrolled_sql($context, 'mod/attendees:signinout', $groupid, true);
-    $sql = "SELECT u.id
-              FROM {user} u
-              JOIN ($esql) je ON je.id = u.id
-             WHERE u.deleted = 0";
-
     // Find which user fields we will try to match on.
     $searchfields = (array) unserialize_array($attendees->searchfields);
     if (empty($searchfields)) { // If empty, search all fields.
@@ -577,7 +585,13 @@ function attendees_lookup($attendees, $code) {
         $searchparams["code$sp"] = $code;
     }
 
-    $sql .= " AND ($searchsql)";
+    list($esql, $params) = get_enrolled_sql($context, 'mod/attendees:signinout', $groupid, true);
+    $sql = "SELECT u.id
+            FROM {user} u
+            JOIN ($esql) je ON je.id = u.id
+            WHERE u.deleted = 0
+            AND ($searchsql)";
+
     $params = array_merge($params, $searchparams);
 
     // Perform sql search.
@@ -613,28 +627,31 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
 
     // Add search mode for kiosk with timecards.
     if ($attendees->kioskmode && $attendees->timecard && !$refresh) {
-        $output .= '<div class="attendees_usersearch">
-                        <form method="get" action="' . $url . '" style="width: 450px;margin: auto;">
-                            <input type="hidden"
-                                   name="id"
-                                   id="id"
-                                   value="' . $cm->id . '" />
-                            <input type="hidden"
-                                   name="tab"
-                                   id="tab"
-                                   value="' . $tab . '" />
-                            <label style="font-weight: bold;">' . get_string("usersearch", "attendees") . '</label>
-                            <input class="form-control attendees_search"
-                                   type="password"
-                                   name="code"
-                                   id="code"
-                                   onblur="this.focus()" autofocus />
-                            <input class="btn btn-primary"
-                                   type="submit"
-                                   style="vertical-align: top;"
-                                   value="' . get_string("signinout", "attendees") . '" />
-                        </form>
-                    </div>';
+        $output .= '
+            <div class="attendees_usersearch">
+                <form method="get" action="' . $url . '" style="width: 450px;margin: auto;">
+                    <input  type="hidden"
+                            name="id"
+                            id="id"
+                            value="' . $cm->id . '" />
+                    <input  type="hidden"
+                            name="tab"
+                            id="tab"
+                            value="' . $tab . '" />
+                    <label style="font-weight: bold;">
+                    ' . get_string("usersearch", "attendees") . '
+                    </label>
+                    <input  class="form-control attendees_search"
+                            type="password"
+                            name="code"
+                            id="code"
+                            onblur="this.focus()" autofocus />
+                    <input  class="btn btn-primary"
+                            type="submit"
+                            style="vertical-align: top;"
+                            value="' . get_string("signinout", "attendees") . '" />
+                </form>
+            </div>';
     }
 
     $alt = ' alt="' . get_string("signinout", "attendees") . '"';
@@ -687,7 +704,7 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
  * @param string $type          selected tab (onlyin, onlyout)
  * @return array                array of filtered usrs
  */
-function filteroutusers($attendees, $allusers, $type) : array {
+function filteroutusers($attendees, $allusers, $type): array {
     global $DB;
 
     $iplock = "";
@@ -704,16 +721,16 @@ function filteroutusers($attendees, $allusers, $type) : array {
 
     // Find all currently signed in users.
     $sql = "SELECT u.*, tc.aid, tc.event, tc.timelog
-              FROM {user} u
-        INNER JOIN {attendees_timecard} tc ON u.id = tc.userid
-             WHERE tc.aid = ?
-               AND tc.event = ?
-               AND tc.timelog >= ?
-               AND tc.timelog IN (SELECT MAX(timelog)
-                                    FROM {attendees_timecard} t
-                                   WHERE t.userid = tc.userid
-                                     AND t.aid = ?
-                                     $iplock)
+            FROM {user} u
+            INNER JOIN {attendees_timecard} tc ON u.id = tc.userid
+            WHERE tc.aid = ?
+            AND tc.event = ?
+            AND tc.timelog >= ?
+            AND tc.timelog IN ( SELECT MAX(timelog)
+                                FROM {attendees_timecard} t
+                                WHERE t.userid = tc.userid
+                                AND t.aid = ?
+                                $iplock)
            $iplock
           ORDER BY u.lastname";
 
@@ -747,7 +764,7 @@ function filteroutusers($attendees, $allusers, $type) : array {
  * @param int $userid           user id
  * @return string               output list of groups
  */
-function attendees_list_user_groups($cm, $attendees, $userid) : string {
+function attendees_list_user_groups($cm, $attendees, $userid): string {
     $grouplist = "";
     if ($attendees->showgroups) {
         $groupings = groups_get_user_groups($cm->course, $userid);
@@ -770,17 +787,6 @@ function attendees_history_ui($cm, $attendees) {
     // URL for the main view of the attendees module.
     $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
 
-    $content = '';
-
-    // Back to main view.
-    $content .= '<div>
-                    <a href="' . $url . '">' .
-                            '<strong>' . get_string('returntoattendees', 'attendees') . '</strong>' .
-                    '</a>
-                    <br><br>
-                </div>';
-    $content .= '<div style="max-width:600px;margin:auto;">';
-
     // Instantiate the myform form from within the plugin.
     $mform = new \mod_attendees\form\historyform(null, ['cm' => $cm]);
     $formdata = null;
@@ -789,7 +795,7 @@ function attendees_history_ui($cm, $attendees) {
     // Form processing and displaying is done here.
     if ($mform->is_cancelled()) {
         // If the cancel element was pressed, then exit early.
-        return $content;
+        return '';
     } else if ($formdata = $mform->get_data()) {
         // When the form is submitted, and the data is successfully validated,
         // the `get_data()` function will return the data posted in the form.
@@ -804,15 +810,18 @@ function attendees_history_ui($cm, $attendees) {
     // Set any default data (if any).
     $mform->set_data($formdata);
 
-    // Display the form.
-    $content .= $mform->render();
-
-    $content .= '</div>';
-
-    // Get history from database.
-    $content .= get_history($attendees, $vars);
-
-    return $content;
+    // Back to main view.
+    return '
+        <div>
+            <a href="' . $url . '">
+                <strong>' . get_string('returntoattendees', 'attendees') . '</strong>
+            </a>
+            <br><br>
+        </div>
+        <div style="max-width:600px;margin:auto;">
+        ' . $mform->render() . ' // Display the form.
+        </div>
+        ' . get_history($attendees, $vars); // Get history from database.
 }
 
 /**
@@ -1054,14 +1063,14 @@ function get_users_next_signin($attendees, $login) {
 
     // Have they signed in again since? Assume autosignout. Should only happen if autosignout setting has been changed.
     $sql = "SELECT t.timelog, t.event, t.userid
-              FROM {attendees_timecard} t
-             WHERE t.aid = :id
+            FROM {attendees_timecard} t
+            WHERE t.aid = :id
             $ipsql
-               AND t.event = 'in'
-               AND t.userid = :userid
-               AND t.timelog > :timein
-          ORDER BY t.timelog ASC
-             LIMIT 1";
+            AND t.event = 'in'
+            AND t.userid = :userid
+            AND t.timelog > :timein
+            ORDER BY t.timelog ASC
+            LIMIT 1";
 
     $params['id'] = $attendees->id;
     $params['userid'] = $login->id;
@@ -1092,14 +1101,14 @@ function get_users_next_signout($attendees, $login) {
 
     // Get users next logout time.
     $sql = "SELECT t.timelog, t.event, t.userid
-              FROM {attendees_timecard} t
-             WHERE t.aid = :id
+            FROM {attendees_timecard} t
+            WHERE t.aid = :id
             $ipsql
-               AND t.event = 'out'
-               AND t.userid = :userid
-               AND t.timelog > :timein
-          ORDER BY t.timelog ASC
-             LIMIT 1";
+            AND t.event = 'out'
+            AND t.userid = :userid
+            AND t.timelog > :timein
+            ORDER BY t.timelog ASC
+            LIMIT 1";
 
     $params['id'] = $attendees->id;
     $params['userid'] = $login->id;

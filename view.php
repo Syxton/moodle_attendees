@@ -100,54 +100,58 @@ if ($history) {
     $content .= attendees_get_ui($cm, $attendees, $tab, $group);
     $content .= '
     <iframe id="attendees_keepalive" src="' . $CFG->wwwroot . '"></iframe>
-    <script>
-        window.setInterval(() => {
-            document.getElementById("attendees_keepalive").contentWindow.location.reload();
-        }, 60000);
+    <script type="module">
+        require(["jquery"], function (jQuery) {
+            window.setInterval(() => {
+                document.getElementById("attendees_keepalive").contentWindow.location.reload();
+            }, 60000);
 
-        jQuery(document).bind("contextmenu", function(e) {
-            return false;
-        });
-
-        window.setInterval(() => {
-            $(".notifications button.close").click();
-        }, 5000);
-
-        window.setInterval(() => {
-            $.ajax({
-                url : "' . $CFG->wwwroot . '/mod/attendees/ajax.php",
-                type : "GET",
-                data : {
-                    "id" : ' . $id . ',
-                    "tab" : "' . $tab . '",
-                    "group" : ' . $group . '
-                },
-                dataType: "json",
-                success : function(data) {
-                    $(".attendees_refreshable").html(data);
-                },
-                error : function(request, error) {
-                    console.log("Request: " + JSON.stringify(request));
-                }
+            jQuery(document).bind("contextmenu", function(e) {
+                return false;
             });
-        }, 10000);
+
+            window.setInterval(() => {
+                jQuery(".notifications button.btn-close").click();
+            }, 5000);
+
+            window.setInterval(() => {
+                jQuery.ajax({
+                    url : "./ajax.php",
+                    type : "GET",
+                    data : {
+                        "id" : ' . $id . ',
+                        "tab" : "' . $tab . '",
+                        "group" : ' . $group . '
+                    },
+                    dataType: "json",
+                    success : function(data) {
+                        jQuery(".attendees_refreshable").html(data);
+                    },
+                    error : function(request, error) {
+                        console.log("Request: " + JSON.stringify(request));
+                    }
+                });
+            }, 10000);
+        });
     </script>';
 }
 
 if ($attendees->kioskmode) { // Wrap kioskmode to control all content.
-    $content = '<div class="attendees_kioskmode">' .
-                    "<h2>$attendees->name</h2>" .
-                    "<p>$attendees->intro</p>" .
-                    $content .
-                '</div>';
+    $content = '
+        <div class="attendees_kioskmode">
+            <p>
+            ' . $attendees->intro . '
+            </p>
+        ' . $content . '
+        </div>';
 }
 
-$formatoptions = new stdClass;
-$formatoptions->noclean = true;
-$formatoptions->overflowdiv = true;
-$formatoptions->context = $context;
+$formatoptions = (object) [
+    'context' => $context,
+    'noclean' => true,
+    'overflowdiv' => true,
+];
 $content = format_text($content, FORMAT_HTML, $formatoptions);
 
 echo $OUTPUT->box($content, "center");
 echo $OUTPUT->footer();
-

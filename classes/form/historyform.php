@@ -55,11 +55,11 @@ class historyform extends \moodleform {
         $mform->setType('h_page', PARAM_INT); // The data type of the element.
 
         // From date/time.
-        $mform->addElement('date_selector', 'h_from', get_string('from'), ['optional' => true]);
+        $mform->addElement('date_selector', 'h_from', get_string('from', 'attendees'), ['optional' => true]);
         $mform->setType('h_from', PARAM_INT); // The data type of the element.
 
         // To date/time.
-        $mform->addElement('date_selector', 'h_to', get_string('to'), ['optional' => true]);
+        $mform->addElement('date_selector', 'h_to', get_string('to', 'attendees'), ['optional' => true]);
         $mform->setType('h_to', PARAM_INT); // The data type of the element.
 
         // Autocomplete field for selecting users.
