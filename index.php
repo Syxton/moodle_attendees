@@ -85,11 +85,12 @@ foreach ($pages as $attendees) {
 
     $class = $attendees->visible ? '' : 'class="dimmed"'; // Hidden modules are dimmed.
 
-    $table->data[] = [$printsection,
-                      "<a $class href=\"view.php?id=$cm->id\">" .
-                          format_string($attendees->name) .
-                      "</a>",
-                      format_module_intro('attendees', $attendees, $cm->id),
+    $table->data[] = [
+        $printsection,
+        "<a $class href=\"view.php?id=$cm->id&view=menu\">" .
+            format_string($attendees->name) .
+        "</a>",
+        format_module_intro('attendees', $attendees, $cm->id),
     ];
 }
 

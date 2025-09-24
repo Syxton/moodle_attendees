@@ -120,16 +120,7 @@ function attendees_add_instance($data, $mform = null) {
     $cmid = $data->coursemodule;
 
     $data->searchfields = serialize(clean_param_array($data->searchfields, PARAM_ALPHANUMEXT));
-    $options = [];
-    $options['timecard']         = $data->timecard;
-    $options['autosignout']      = $data->autosignout;
-    $options['defaultview']      = $data->defaultview;
-    $options['showroster']       = $data->showroster;
-    $options['lockview']         = $data->lockview;
-    $options['kioskmode']        = $data->kioskmode;
-    $options['kioskbuttons']     = $data->kioskbuttons;
-    $options['iplock']           = $data->iplock;
-    $options['searchfields']     = $data->searchfields;
+    $options = get_options_as_array($data);
 
     $data->displayoptions = serialize($options);
     $data->id = $DB->insert_record('attendees', $data);
@@ -141,6 +132,20 @@ function attendees_add_instance($data, $mform = null) {
     \core_completion\api::update_completion_date_event($cmid, 'attendees', $data->id, $compexpected);
 
     return $data->id;
+}
+
+function get_options_as_array($data) {
+    return [
+        'timecard'          => $data->timecard,
+        'autosignout'       => $data->autosignout,
+        'defaultview'       => $data->defaultview,
+        'showroster'        => $data->showroster,
+        'lockview'          => $data->lockview,
+        'kioskmode'         => $data->kioskmode,
+        'kioskbuttons'      => $data->kioskbuttons,
+        'multiplelocations' => $data->multiplelocations,
+        'searchfields'      => $data->searchfields,
+    ];
 }
 
 /**
@@ -157,16 +162,7 @@ function attendees_update_instance($data, $mform) {
     $data->id    = $data->instance;
     $data->searchfields = serialize(clean_param_array($data->searchfields, PARAM_ALPHANUMEXT));
 
-    $options = [];
-    $options['timecard']         = $data->timecard;
-    $options['autosignout']      = $data->autosignout;
-    $options['defaultview']      = $data->defaultview;
-    $options['showroster']       = $data->showroster;
-    $options['lockview']         = $data->lockview;
-    $options['kioskmode']        = $data->kioskmode;
-    $options['kioskbuttons']     = $data->kioskbuttons;
-    $options['iplock']           = $data->iplock;
-    $options['searchfields']     = $data->searchfields;
+    $options = get_options_as_array($data);
 
     $data->displayoptions = serialize($options);
 
@@ -287,6 +283,176 @@ function attendees_view($attendees, $course, $cm, $context) {
     $completion->set_module_viewed($cm);
 }
 
+function attendees_overwatch_ui($cm, $attendees) {
+    $content = '
+        <div class="attendees_menu_element" style="min-width: 200px;">
+            <h3>Overwatch Mode</h3>
+            <p style="font-size: 0.9em;">Use overwatch mode to administer and view the attendees list.</p>
+            <button
+                type="button"
+                href="javascript: void(0);"
+                onclick="
+                    let locationvalue = jQuery(\'.locationlist input:checked\').val();
+                    if (locationvalue) {
+                        window.location.href = \'view.php?id=' . $cm->id . '&view=overwatch&location=\' + locationvalue;
+                    } else if (locationvalue === undefined || locationvalue === 0) {
+                        alert(\'You must select a location\');
+                    }">
+                <i class="fa-solid fa-binoculars"></i> ' . get_string('overwatch', 'mod_attendees') . '
+            </button>
+        </div>';
+
+    return $content;
+}
+
+function attendees_location_manager_ui($cm, $attendees) {
+    global $DB;
+
+    $locationlist = '';
+    $locations = $DB->get_records_select('attendees_locations', 'aid', [$cm->id]);
+    if ($locations) {
+        $locationlist = '<div style="text-align: left;" class="locationlist">';
+        // Build groupid array.
+        foreach ($locations as $l) {
+            $locationlist .= '
+                <div class="locationlist_item" style="display: flex;justify-content: space-between;align-items: center;">
+                    <div>
+                        <input
+                            type="radio"
+                            name="attendees_location"
+                            class="attendees_location"
+                            value="' . $l->id . '"
+                        />
+                        <input
+                            type="text"
+                            id="locationnameedit_' . $l->id . '"
+                            value="' . $l->name . '"
+                            style="display: none;"
+                        />
+                        <span
+                            id="locationname_' . $l->id . '"
+                            style="padding: 4px;">
+                            ' . $l->name . '
+                        </span>
+                    </div>
+                    <div>
+                        <a  title="Rename" id="locationrename_' . $l->id . '"
+                            href="javascript: void(0);"
+                            class="btn"
+                            style="color: #297e14ff;"
+                            onclick="
+                                jQuery(\'#locationname_' . $l->id . ', #locationrename_' . $l->id . '\').hide();
+                                jQuery(\'#locationsave_' . $l->id . ', #locationcancel_' . $l->id . ', #locationnameedit_' . $l->id . '\').show();"
+                        >
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </a>
+                        <a  title="Save"
+                            id="locationsave_' . $l->id . '"
+                            href="javascript: void(0);"
+                            class="btn"
+                            style="color: #5d3addff;display: none;"
+                            onclick="window.location.href = \'view.php?id=' . $cm->id . '&view=updatelocation&location=' . $l->id . '&newname=\' + encodeURIComponent(jQuery(\'#locationnameedit_' . $l->id . '\').val()); return false;"
+                        >
+                            <i class="fa-solid fa-floppy-disk"></i>
+                        </a>
+                        <a  title="Cancel"
+                            id="locationcancel_' . $l->id . '"
+                            href="javascript: void(0);"
+                            class="btn"
+                            style="display: none;"
+                            onclick="
+                                jQuery(\'#locationsave_' . $l->id . ', #locationcancel_' . $l->id . ', #locationnameedit_' . $l->id . '\').hide();
+                                jQuery(\'#locationname_' . $l->id . ', #locationrename_' . $l->id . '\').show();"
+                        >
+                            <i class="fa-solid fa-ban"></i>
+                        </a>
+                        <a  title="Delete"
+                            href="javascript: void(0);"
+                            class="btn"
+                            style="color: #d33;"
+                            onclick="
+                                if (confirm(\'Are you sure you want to delete this location\')) {
+                                    window.location.href = \'view.php?id=' . $cm->id . '&view=deletelocation&location=' . $l->id . '\';
+                                }"
+                        >
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </div>
+                </div>';
+        }
+        $locationlist .= '</div>';
+    }
+
+    // Add a new location button.
+    $locationlist .= '
+        <button
+            type="button"
+            style="float: right"
+            onclick="window.location.href = \'view.php?id=' . $cm->id . '&view=newlocation\'">
+            Add New Location
+        </button>';
+
+    $content = '
+        <div class="attendees_menu_element" style="min-width: 200px;width: 100%;max-width: 500px;">
+            <h3>Location Selector</h3>
+            <p style="font-size: 0.9em;">Select the location you will be signing attendees in and out of.</p>
+            ' . $locationlist . '
+        </div>';
+
+    return $content;
+}
+
+function attendees_start_kiosk_ui($cm, $attendees) {
+    $content = '
+        <div class="attendees_menu_element" style="min-width: 200px;">
+            <h3>Kiosk Mode</h3>
+            <p style="font-size: 0.9em;">Use kiosk mode to view the attendees list.</p>
+            <button
+                type="button"
+                onclick="
+                    let locationvalue = jQuery(\'.locationlist input:checked\').val();
+                    if (locationvalue) {
+                        window.location.href = \'view.php?id=' . $cm->id . '&view=kiosk&location=\' + locationvalue;
+                    } else if (locationvalue === undefined || locationvalue === 0) {
+                        alert(\'You must select a location\');
+                    }">
+                <i class="fa-solid fa-tv"></i> ' . get_string('startkiosk', 'mod_attendees') . '
+            </button>
+        </div>';
+
+    return $content;
+}
+
+function attendees_menu_ui($cm, $attendees) {
+    $context = context_module::instance($cm->id);
+
+    // Only teachers should see this menu.
+    if (!has_capability('mod/attendees:viewrosters', $context)) {
+        // The user doesn't have permission to be here so go back to course page.
+        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        redirect($url);
+    }
+
+
+    $content = '<div class="attendees_menu" style="display: flex;gap: 10px;flex-wrap: wrap;justify-content: space-evenly;align-items: flex-start;">';
+
+    $content .= attendees_overwatch_ui($cm, $attendees);
+
+    if ($attendees->kioskmode) {
+        $content .= attendees_start_kiosk_ui($cm, $attendees);
+    } else {
+        $content .= attendees_get_ui($cm, $attendees);
+    }
+
+    if ($attendees->multiplelocations) {
+        $content .= attendees_location_manager_ui($cm, $attendees);
+    }
+
+    $content .= '</div>';
+
+    return $content;
+}
+
 /**
  * Attendees user interface.
  *
@@ -297,24 +463,28 @@ function attendees_view($attendees, $course, $cm, $context) {
  * @param bool $refresh         wheter the entire page content is needed or just the roster updated
  * @return string               user interface html text
  */
-function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0, $refresh = false) {
+function attendees_get_ui($cm, $attendees, $refresh = false) {
     global $USER;
+
+    $tab = !$attendees->tab ? 'all' : $attendees->tab;
+    $groupid = !$attendees->group ? 0 : $attendees->group;
+
     $context = context_module::instance($cm->id);
     $viewrosters = has_capability('mod/attendees:viewrosters', $context);
 
     $content = "";
-    // Show single user sign in button if the timecard featuring is being used.
+    // Show single user sign in button if the timecard feature is being used.
     // And the user is a student.
     // And the activity is NOT in kiosk mode (shouldn't get this far).
     // And it isn't an ajax roster refresh.
     if (!$viewrosters && !$attendees->kioskmode && $attendees->timecard && !$refresh
         && is_enrolled($context, $USER, 'mod/attendees:signinout', true)) {
-        $content .= attendees_sign_inout_button($cm, $tab);
+        $content .= attendees_sign_inout_button($cm, $tab, $attendees);
     }
 
     // GROUP MODE.
     if ($groupmode = groups_get_activity_groupmode($cm)) {
-        $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
+        $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
         if (!$groupid) {
             $groupid = groups_get_activity_group($cm);
         }
@@ -334,26 +504,27 @@ function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0, $refresh 
     }
 
     // Data History link.
-    if (!$refresh && $attendees->timecard && has_capability('mod/attendees:viewhistory', $context)) {
-        $content .= '<div class="attendees_history">
-                        <a href="view.php?id=' . $cm->id . '&h=true">' .
-                            get_string('history', 'mod_attendees') .
-                    '</a>
-                    </div>';
+    if ($attendees->view !== "kiosk" && !$refresh && $attendees->timecard && has_capability('mod/attendees:viewhistory', $context)) {
+        $content .= '
+            <div class="attendees_history">
+                <a href="view.php?id=' . $cm->id . '&view=history">
+                ' . get_string('history', 'mod_attendees') . '
+                </a>
+            </div>';
     }
 
     // Roster.
     if ($viewrosters || $attendees->showroster) {
         if (has_capability('mod/attendees:signinout', $context)) {
-            if (!$attendees->lockview && !$refresh) {
-                $content .= attendees_roster_tabs($cm, $tab);
+            if (!$refresh && ($attendees->view === "overwatch" || !$attendees->lockview)) {
+                $content .= attendees_roster_tabs($cm, $attendees);
             }
-            $content .= attendees_roster_view($cm, $users, $tab, $refresh);
+            $content .= attendees_roster_view($cm, $users, $attendees, $refresh);
         } else {
-            $content .= attendees_roster_view($cm, $users, $tab, $refresh);
+            $content .= attendees_roster_view($cm, $users, $attendees, $refresh);
         }
     } else {
-        $content .= attendees_roster_view($cm, [$USER], $tab, $refresh);
+        $content .= attendees_roster_view($cm, [$USER], $attendees, $refresh);
     }
 
     return $content;
@@ -366,11 +537,12 @@ function attendees_get_ui($cm, $attendees, $tab = 'all', $groupid = 0, $refresh 
  * @param string $tab           the name of the selected tab
  * @return string               tabs html text
  */
-function attendees_roster_tabs($cm, $tab) {
+function attendees_roster_tabs($cm, $attendees) {
     global $CFG;
     $all = $onlyin = $onlyout = "";
+    $tab = $attendees->tab;
     $$tab = 'active active_tree_node';
-    $url = "$CFG->wwwroot/mod/attendees/view.php?id=$cm->id&tab=";
+    $url = "$CFG->wwwroot/mod/attendees/view.php?id=$cm->id&location=$attendees->location&view=$attendees->view&group=$attendees->group&tab=";
 
     return '
     <div class="attendees_tabs secondary-navigation d-print-none">
@@ -403,11 +575,11 @@ function attendees_roster_tabs($cm, $tab) {
  * @param string $tab           the name of the selected tab
  * @return string               button html text
  */
-function attendees_sign_inout_button($cm, $tab) {
+function attendees_sign_inout_button($cm, $tab, $attendees) {
     global $CFG, $USER, $DB, $OUTPUT;
     $user = $DB->get_record('user', ['id' => $USER->id], '*', MUST_EXIST);
-    $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab";
-    if (attendees_is_active($user, $cm->instance)) {
+    $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab&location=$attendees->location&view=$attendees->view";
+    if (attendees_is_active($user, $attendees)) {
         $text = get_string("signout", "attendees");
         $inorout = $OUTPUT->pix_icon('a/logout', $text , 'moodle') . " $text";
     } else {
@@ -440,9 +612,10 @@ function attendees_signinout($attendees, $userid) {
         'aid' => $attendees->id,
         'timelog' => $time->getTimestamp(),
         'ip' => getremoteaddr(),
+        'location' => $attendees->location,
     ];
 
-    if (attendees_is_active($user, $attendees->id)) {
+    if (attendees_is_active($user, $attendees)) {
         $timecard->event = "out";
         $DB->insert_record('attendees_timecard', $timecard);
     } else {
@@ -463,8 +636,8 @@ function attendees_signinout($attendees, $userid) {
  * @param stdClass $user        user object
  * @return string               return in or out
  */
-function attendees_current_status($cm, $user) {
-    return attendees_is_active($user, $cm->instance) ? "in" : "out";
+function attendees_current_status($cm, $user, $attendees) {
+    return attendees_is_active($user, $attendees) ? "in" : "out";
 }
 
 /**
@@ -474,26 +647,23 @@ function attendees_current_status($cm, $user) {
  * @param int $aid              attendees instance id
  * @return bool                 is user active
  */
-function attendees_is_active($user, $aid) {
+function attendees_is_active($user, $attendees) {
     global $DB;
 
-    $attendees = $DB->get_record('attendees', ['id' => $aid]);
-    $iplock = "";
-    if ($attendees->iplock) {
-        $ip = getremoteaddr();
-        $iplock = "AND ip = '$ip' ";
+    $multiplelocations = "";
+    if ($attendees->multiplelocations) {
+        $multiplelocations = "AND location = ?";
     }
 
-    $sql = "SELECT *
-            FROM {attendees_timecard}
-            WHERE aid = ?
-            AND event = ?
-            AND userid = ?
-            $iplock
-            ORDER BY timelog
-            DESC LIMIT 1";
-    $lastout = $DB->get_record_sql($sql, [$aid, 'out', $user->id]);
-    $lastin = $DB->get_record_sql($sql, [$aid, 'in', $user->id]);
+    $sql = "SELECT * FROM {attendees_timecard}
+        WHERE aid = ?
+        AND event = ?
+        AND userid = ?
+        $multiplelocations
+        ORDER BY timelog
+        DESC LIMIT 1";
+    $lastout = $DB->get_record_sql($sql, [$attendees->id, 'out', $user->id, $attendees->location]);
+    $lastin = $DB->get_record_sql($sql, [$attendees->id, 'in', $user->id, $attendees->location]);
     $today = attendees_get_today();
 
     if (!empty($lastin) || !empty($lastout)) {
@@ -614,15 +784,18 @@ function attendees_lookup($attendees, $code) {
  * @param bool $refresh         wheter the entire page content is needed or just the roster updated
  * @return string               output html of roster
  */
-function attendees_roster_view($cm, $users, $tab, $refresh = false) {
+function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
     global $CFG, $OUTPUT, $DB;
     require_once($CFG->libdir.'/filelib.php');
 
     $context = context_module::instance($cm->id);
     $signinoutothers = has_capability('mod/attendees:signinoutothers', $context);
-    $attendees = $DB->get_record('attendees', ['id' => $cm->instance]);
 
-    $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab";
+    $tab = $attendees->tab;
+    $location = $attendees->location;
+    $view = $attendees->view;
+
+    $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab&location=$location&view=$view";
     $output = "";
 
     // Add search mode for kiosk with timecards.
@@ -638,6 +811,14 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
                             name="tab"
                             id="tab"
                             value="' . $tab . '" />
+                    <input  type="hidden"
+                            name="location"
+                            id="location"
+                            value="' . $location . '" />
+                    <input  type="hidden"
+                            name="view"
+                            id="view"
+                            value="' . $view . '" />
                     <label style="font-weight: bold;">
                     ' . get_string("usersearch", "attendees") . '
                     </label>
@@ -657,11 +838,12 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
     $alt = ' alt="' . get_string("signinout", "attendees") . '"';
     $icons = $OUTPUT->pix_icon('a/logout', get_string("signout", "attendees"), 'moodle') .
              $OUTPUT->pix_icon('withoutkey', get_string("signin", "attendees"), 'enrol_self');
-    $options = ['size' => '100', // Size of image.
-                'link' => !$attendees->kioskmode, // Make image clickable.
-                'alttext' => true, // Add image alt attribute.
-                'class' => "userpicture", // Image class attribute.
-                'visibletoscreenreaders' => false,
+    $options = [
+        'size' => '100', // Size of image.
+        'link' => !$attendees->kioskmode, // Make image clickable.
+        'alttext' => true, // Add image alt attribute.
+        'class' => "userpicture", // Image class attribute.
+        'visibletoscreenreaders' => false,
     ];
 
     // Reduce users array if possible.
@@ -673,13 +855,13 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
     foreach ($users as $user) {
         $status = "out";
         if ($attendees->timecard) {
-            $status = attendees_current_status($cm, $user);
+            $status = attendees_current_status($cm, $user, $attendees);
         }
         $output .= '<div class="attendees_userblock attendees_status_'. $status . '">';
 
         // Only show icons if timecard is enabled and has permissions.
         if (!empty($attendees->timecard) && !empty($signinoutothers) &&
-            (empty($attendees->kioskmode) || (!empty($attendees->kioskmode) && !empty($attendees->kioskbuttons)))) {
+            (empty($attendees->kioskmode) || (!empty($attendees->kioskmode) && !empty($attendees->kioskbuttons) || $attendees->view === "overwatch"))) {
             $href = ' href="' . $url . "&userid=$user->id" . '"';
             $output .= '<a class="attendees_otherinout_button" ' . $href . $alt . ' >' .
                             $icons .
@@ -704,19 +886,26 @@ function attendees_roster_view($cm, $users, $tab, $refresh = false) {
  * @param string $type          selected tab (onlyin, onlyout)
  * @return array                array of filtered usrs
  */
-function filteroutusers($attendees, $allusers, $type): array {
+function filteroutusers($attendees, $allusers): array {
     global $DB;
 
-    $iplock = "";
-    if ($attendees->iplock) {
-        $ip = getremoteaddr();
-        $iplock = "AND ip = '$ip' ";
-    }
-
+    $timelimit = 0;
     if ($attendees->autosignout) {
         $timelimit = attendees_get_today();
-    } else {
-        $timelimit = 0;
+    }
+
+    $params = [
+        $attendees->id,
+        'in',
+        $timelimit,
+        $attendees->id,
+    ];
+
+    $multiplelocations = "";
+    if ($attendees->multiplelocations) {
+        $multiplelocations = "AND location = ?";
+        $params[] = $attendees->location; // Add location to parameters.
+        $params[] = $attendees->location; // Add twice since we use it twice in the query.
     }
 
     // Find all currently signed in users.
@@ -730,14 +919,14 @@ function filteroutusers($attendees, $allusers, $type): array {
                                 FROM {attendees_timecard} t
                                 WHERE t.userid = tc.userid
                                 AND t.aid = ?
-                                $iplock)
-           $iplock
+                                $multiplelocations)
+           $multiplelocations
           ORDER BY u.lastname";
 
-    $activeusers = $DB->get_records_sql($sql, [$attendees->id, 'in', $timelimit, $attendees->id]);
+    $activeusers = $DB->get_records_sql($sql, $params);
 
     // A user could have been signed in recently, but removed from a group more recently.
-    if ($type == "onlyin") {
+    if ($attendees->tab == "onlyin") {
         // Verify active users are in the enrolled users list.
         foreach ($activeusers as $id => $auser) {
             if (!isset($allusers[$id])) {
@@ -745,7 +934,7 @@ function filteroutusers($attendees, $allusers, $type): array {
             }
         }
         return $activeusers;
-    } else if ($type == "onlyout") {
+    } else if ($attendees->tab == "onlyout") {
         // Subtract the activeusers list from the allusers list.
         foreach ($activeusers as $id => $auser) {
             if (isset($allusers[$id])) {
@@ -785,10 +974,10 @@ function attendees_list_user_groups($cm, $attendees, $userid): string {
  */
 function attendees_history_ui($cm, $attendees) {
     // URL for the main view of the attendees module.
-    $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
+    $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
 
     // Instantiate the myform form from within the plugin.
-    $mform = new \mod_attendees\form\historyform(null, ['cm' => $cm]);
+    $mform = new \mod_attendees\form\historyform(null, ['cm' => $cm, 'attendees' => $attendees]);
     $formdata = null;
     $vars = ['h_to' => 0, 'h_from' => 0, 'h_user' => 0, 'h_locations' => 0, 'h_courses' => 0, 'h_page' => 0];
 
@@ -819,7 +1008,7 @@ function attendees_history_ui($cm, $attendees) {
             <br><br>
         </div>
         <div style="max-width:600px;margin:auto;">
-        ' . $mform->render() . ' // Display the form.
+        ' . $mform->render() . '
         </div>
         ' . get_history($attendees, $vars); // Get history from database.
 }
@@ -842,7 +1031,7 @@ function get_history(stdClass $attendees, array $vars): string {
     $params['id'] = $attendees->id;
 
     // Initialize the SQL WHERE conditions.
-    $timesql = $usersql = $ipsql = $ejoin = '';
+    $timesql = $usersql = $locationsql = $ejoin = '';
 
     // If times are given.
     if (!empty($vars['h_from']) || isset($vars['h_to'])) {
@@ -870,7 +1059,7 @@ function get_history(stdClass $attendees, array $vars): string {
     if (!empty($vars['h_locations'])) {
         // Add the location condition to the SQL query if a location is given.
         [$locsql, $locp] = $DB->get_in_or_equal($vars['h_locations'], SQL_PARAMS_NAMED, 'location');
-        $ipsql = "AND t.ip {$locsql}";
+        $locationsql = "AND t.location {$locsql}";
         $params += $locp;
     }
 
@@ -887,15 +1076,16 @@ function get_history(stdClass $attendees, array $vars): string {
     $offset = $pagenum * $historylimit;
 
     // Build the SQL query.
-    $sql = "SELECT t.timelog, t.event, u.id, u.firstname, u.lastname, t.aid, t.ip
+    $sql = "SELECT t.timelog, t.event, u.id, u.firstname, u.lastname, t.aid, t.ip, l.id as lid, l.name as locationname
             FROM {attendees_timecard} t
             JOIN {user} u ON u.id = t.userid
+            JOIN {attendees_locations} l ON l.id = t.location
             $ejoin
             WHERE t.aid = :id
             AND t.event = 'in'
             $timesql
             $usersql
-            $ipsql
+            $locationsql
             ORDER BY t.timelog DESC
             LIMIT " . ($historylimit + 1) . " OFFSET $offset";
 
@@ -966,6 +1156,7 @@ function display_history(array $history, stdClass $attendees, array $vars): stri
     // Add table headers.
     $return .= '<tr>
         <th>' . get_string('user') . '</th>
+        <th>' . get_string('locations', 'attendees') . '</th>
         <th>' . get_string('signedin', 'attendees') . '</th>
         <th>' . get_string('signedout', 'attendees') . '</th>
         <th>' . get_string('duration', 'attendees') . '</th>
@@ -978,6 +1169,7 @@ function display_history(array $history, stdClass $attendees, array $vars): stri
     foreach ($history as $login) {
         $return .= '<tr>
             <td>' . $login->firstname . ' ' . $login->lastname . '</td>
+            <td>' . $login->locationname . '</td>
             <td>' . date("F j, Y, g:i a", $login->timelog) . '</td>';
 
         // Get next sign in and next signouts.
@@ -1054,10 +1246,10 @@ function get_users_next_signin($attendees, $login) {
 
     $params = [];
 
-    $ipsql = ""; // If iplock is enabled.
-    if ($attendees->iplock) {
-        [$locsql, $locp] = $DB->get_in_or_equal($login->ip, SQL_PARAMS_NAMED, 'ip');
-        $ipsql = " AND t.ip {$locsql}";
+    $locationsql = ""; // If multiple locations is enabled.
+    if ($attendees->multiplelocations) {
+        [$locsql, $locp] = $DB->get_in_or_equal($login->lid, SQL_PARAMS_NAMED, 'location');
+        $locationsql = " AND t.location {$locsql}";
         $params += $locp;
     }
 
@@ -1065,7 +1257,7 @@ function get_users_next_signin($attendees, $login) {
     $sql = "SELECT t.timelog, t.event, t.userid
             FROM {attendees_timecard} t
             WHERE t.aid = :id
-            $ipsql
+            $locationsql
             AND t.event = 'in'
             AND t.userid = :userid
             AND t.timelog > :timein
@@ -1092,10 +1284,10 @@ function get_users_next_signout($attendees, $login) {
 
     $params = [];
 
-    $ipsql = ""; // If iplock is enabled.
-    if ($attendees->iplock) {
-        [$locsql, $locp] = $DB->get_in_or_equal($login->ip, SQL_PARAMS_NAMED, 'ip');
-        $ipsql = " AND t.ip {$locsql}";
+    $locationsql = ""; // If multiple locations is enabled.
+    if ($attendees->multiplelocations) {
+        [$locsql, $locp] = $DB->get_in_or_equal($login->lid, SQL_PARAMS_NAMED, 'location');
+        $locationsql = " AND t.location {$locsql}";
         $params += $locp;
     }
 
@@ -1103,7 +1295,7 @@ function get_users_next_signout($attendees, $login) {
     $sql = "SELECT t.timelog, t.event, t.userid
             FROM {attendees_timecard} t
             WHERE t.aid = :id
-            $ipsql
+            $locationsql
             AND t.event = 'out'
             AND t.userid = :userid
             AND t.timelog > :timein

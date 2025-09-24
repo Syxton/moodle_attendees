@@ -46,7 +46,7 @@ class backup_attendees_activity_structure_step extends backup_activity_structure
                                                                      'showroster',
                                                                      'kioskmode',
                                                                      'kioskbuttons',
-                                                                     'iplock',
+                                                                     'multiplelocations',
                                                                      'searchfields',
                                                                      'showgroups',
                                                                     ]);

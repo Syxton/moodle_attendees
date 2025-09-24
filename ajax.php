@@ -28,7 +28,9 @@ require_once($CFG->libdir.'/completionlib.php');
 
 $id      = optional_param('id', 0, PARAM_INT); // Course Module ID.
 $tab     = optional_param('tab', null, PARAM_ALPHANUM);
-$group = optional_param('group', null, PARAM_INT);
+$group   = optional_param('group', null, PARAM_INT);
+$view       = optional_param('view', null, PARAM_ALPHANUM);
+$location   = optional_param('location', 0, PARAM_INT); // Location filter.
 
 if (!$cm = get_coursemodule_from_id('attendees', $id)) {
     throw new \moodle_exception('invalidcoursemodule');
@@ -37,6 +39,12 @@ if (!$cm = get_coursemodule_from_id('attendees', $id)) {
 $attendees = $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 
+$attendees->view = $view;
+$attendees->location = $location;
+$attendees->group = $group;
+$attendees->tab = !$tab ? $attendees->defaultview : $tab;
+$attendees->tab = $attendees->lockview ? $attendees->defaultview : $attendees->tab;
+
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 
@@ -44,8 +52,11 @@ require_capability('mod/attendees:view', $context);
 
 $json = json_encode([]);
 
+$attendees->group = $group;
+$attendees->tab = $tab;
+
 // Refresh list of users.
-$data = [attendees_get_ui($cm, $attendees, $tab, $group, true)];
+$data = [attendees_get_ui($cm, $attendees, true)];
 $json = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
 
 echo $json;

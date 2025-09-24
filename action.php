@@ -26,10 +26,13 @@ require('../../config.php');
 require_once($CFG->dirroot.'/mod/attendees/lib.php');
 require_once($CFG->libdir.'/completionlib.php');
 
-$id      = optional_param('id', 0, PARAM_INT); // Course Module ID.
-$userid  = optional_param('userid', 0, PARAM_INT); // User ID ID.
-$tab     = optional_param('tab', null, PARAM_ALPHANUM);
-$code    = optional_param('code', null, PARAM_RAW);
+$id         = optional_param('id', 0, PARAM_INT); // Course Module ID.
+$userid     = optional_param('userid', 0, PARAM_INT); // User ID ID.
+$tab        = optional_param('tab', null, PARAM_ALPHANUM);
+$view       = optional_param('view', null, PARAM_ALPHANUM);
+$group      = optional_param('group', 0, PARAM_INT);
+$code       = optional_param('code', null, PARAM_RAW);
+$location   = optional_param('location', 0, PARAM_INT); // Location filter.
 $message = "";
 
 if (!$cm = get_coursemodule_from_id('attendees', $id)) {
@@ -43,6 +46,12 @@ require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 
 require_capability('mod/attendees:view', $context);
+
+$attendees->view = $view;
+$attendees->location = $location;
+$attendees->group = $group;
+$attendees->tab = !$tab ? $attendees->defaultview : $tab;
+$attendees->tab = $attendees->lockview ? $attendees->defaultview : $attendees->tab;
 
 // Check if attendees has sign in/out enabled.
 if ($attendees->timecard) {
@@ -67,4 +76,4 @@ if ($attendees->timecard) {
 attendees_view($attendees, $course, $cm, $context);
 
 $tab = !$tab ? $attendees->defaultview : $tab;
-redirect($CFG->wwwroot ."/mod/attendees/view.php?id=$id&tab=$tab", $message);
+redirect($CFG->wwwroot ."/mod/attendees/view.php?id=$id&tab=$tab&location=$location&view=$view", $message);

@@ -37,6 +37,7 @@ class historyform extends \moodleform {
      */
     public function definition() {
         $cm = $this->_customdata['cm']; // The course module object.
+        $attendees = $this->_customdata['attendees']; // The course module object.
 
         // A reference to the form is stored in $this->form.
         // A common convention is to store it in a variable, such as `$mform`.
@@ -47,8 +48,12 @@ class historyform extends \moodleform {
         $mform->setType('id', PARAM_INT); // The data type of the element.
 
         // A hidden field to indicate the form is being used for searching history.
-        $mform->addElement('hidden', 'h', 'true');
-        $mform->setType('h', PARAM_BOOL); // The data type of the element.
+        $mform->addElement('hidden', 'view', 'history');
+        $mform->setType('view', PARAM_ALPHANUM); // The data type of the element.
+
+        // A hidden field to indicate the form is being used for searching history.
+        $mform->addElement('hidden', 'location', $attendees->location);
+        $mform->setType('location', PARAM_INT); // The data type of the element.
 
         // A hidden field to store the page number.
         $mform->addElement('hidden', 'h_page', 0);
@@ -88,7 +93,7 @@ class historyform extends \moodleform {
         $locations = [];
         if ($alllocations = $this->get_all_locations($cm)) {
             foreach ($alllocations as $l) {
-                $locations[$l->ip] = $l->ip;
+                $locations[$l->id] = $l->name;
             }
         }
         $options = [
@@ -129,8 +134,8 @@ class historyform extends \moodleform {
         global $DB;
 
         // User Search.
-        $sql = "SELECT DISTINCT t.ip
-                  FROM {attendees_timecard} t
+        $sql = "SELECT t.id, t.name
+                  FROM {attendees_locations} t
                  WHERE t.aid = :id";
 
         return $DB->get_records_sql($sql, ['id' => $cm->instance]);

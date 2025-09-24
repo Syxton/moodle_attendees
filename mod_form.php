@@ -60,9 +60,10 @@ class mod_attendees_mod_form extends moodleform_mod {
         $mform->addElement('header', 'appearancehdr', get_string('appearance'));
 
         // Number of attempts.
-        $defaultviewoptions = ['all' => get_string('all'),
-                               'onlyin' => get_string('onlyin', 'attendees'),
-                               'onlyout' => get_string('onlyout', 'attendees'),
+        $defaultviewoptions = [
+            'all' => get_string('all'),
+            'onlyin' => get_string('onlyin', 'attendees'),
+            'onlyout' => get_string('onlyout', 'attendees'),
         ];
         $mform->addElement('select', 'defaultview', get_string('rosterview', 'attendees'), $defaultviewoptions);
 
@@ -84,14 +85,18 @@ class mod_attendees_mod_form extends moodleform_mod {
         $mform->hideIf('kioskbuttons', 'kioskmode', 'eq', 0);
         $mform->hideIf('kioskbuttons', 'timecard', 'eq', 0);
 
-        $searchfields = ['idnumber' => get_string("idnumber"),
-                         'email' => get_string("email"),
-                         'username' => get_string("username"),
-                         'phone1' => get_string("phone1"),
-                         'phone2' => get_string("phone2"),
+        // Fields to search when signing in/out.
+        $searchfields = [
+            'idnumber' => get_string("idnumber"),
+            'email' => get_string("email"),
+            'username' => get_string("username"),
+            'phone1' => get_string("phone1"),
+            'phone2' => get_string("phone2"),
         ];
-        $options = ['multiple' => true,
-                    'noselectionstring' => get_string('allareas', 'search'),
+        // Autocomplete element options.
+        $options = [
+            'multiple' => true,
+            'noselectionstring' => get_string('allareas', 'search'),
         ];
         $mform->addElement('autocomplete', 'searchfields', get_string('searchfields', 'attendees'), $searchfields, $options);
         $mform->setDefault('searchfields', $config->searchfields);
@@ -105,9 +110,9 @@ class mod_attendees_mod_form extends moodleform_mod {
         $mform->setDefault('autosignout', $config->autosignout);
         $mform->hideIf('autosignout', 'timecard', 'eq', 0);
 
-        $mform->addElement('advcheckbox', 'iplock', get_string('iplock', 'attendees'));
-        $mform->setDefault('iplock', $config->iplock);
-        $mform->hideIf('iplock', 'timecard', 'eq', 0);
+        $mform->addElement('advcheckbox', 'multiplelocations', get_string('multiplelocations', 'attendees'));
+        $mform->setDefault('multiplelocations', $config->multiplelocations);
+        $mform->hideIf('multiplelocations', 'timecard', 'eq', 0);
 
         $this->standard_coursemodule_elements();
 

@@ -48,5 +48,48 @@
  * @param int $oldversion   version number of current block
  */
 function xmldb_attendees_upgrade($oldversion) {
-    return $oldversion ? true : false; // Returns true if a version is given.
+    global $CFG, $DB;
+
+    $dbman = $DB->get_manager();
+
+    if ($oldversion < 2024041001) {
+        // Rename description field to intro, and define field introformat to be added to scheduler.
+        $table = new xmldb_table('attendees');
+        $iplockfield = new xmldb_field('iplock', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'kioskbuttons');
+        if ($dbman->field_exists($table, $iplockfield)) {
+            $dbman->rename_field($table, $iplockfield, 'multiplelocations', false);
+        }
+
+        // Add location field to attendees_timecard.
+        $table = new xmldb_table('attendees_timecard');
+        $formatfield = new xmldb_field('location', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'ip');
+
+        if (!$dbman->field_exists($table, $formatfield)) {
+            $dbman->add_field($table, $formatfield);
+        }
+
+        // Create new attendees_locations table.
+        $table = new xmldb_table('attendees_locations');
+
+        // Adding fields to table quiz_grade_items.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('aid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, "Default Location");
+
+        // Adding keys to table quiz_grade_items.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Adding indexes to table quiz_grade_items.
+        $table->add_index('aid', XMLDB_INDEX_NOTUNIQUE, ['aid']);
+
+        // Conditionally launch create table for quiz_grade_items.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Savepoint reached.
+        upgrade_mod_savepoint(true, 2024041001, 'attendees');
+    }
+
+    return true;
 }
