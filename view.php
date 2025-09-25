@@ -80,7 +80,7 @@ $PAGE->add_body_class('limitedwidth');
 $PAGE->activityheader->set_attrs($activityheader);
 $PAGE->activityheader->disable();
 
-// Security Area //
+// Security Area.
 $canaddinstance = has_capability('mod/attendees:addinstance', $context);
 $canviewrosters = has_capability('mod/attendees:viewrosters', $context);
 $canviewhistory = has_capability('mod/attendees:viewhistory', $context);

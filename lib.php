@@ -608,14 +608,27 @@ function attendees_menu_ui($cm, $attendees) {
 }
 
 /**
- * Attendees user interface.
+ * Generates the user interface for the attendees module.
  *
- * @param cm_info $cm           course module data
+ * This function takes a course module object and an attendees object as
+ * parameters and generates the user interface based on those parameters.
+ *
+ * The user interface consists of a group selector, a sign in/out button
+ * for students, a data history link, and a roster view.
+ *
+ * The function first checks if the user has permission to view rosters.
+ * If the user has permission, it will display the kiosk mode button if
+ * the attendees instance has kiosk mode enabled. It will also display
+ * the location manager button if the user has permission to add instances.
+ *
+ * If the user has permission to add instances, it will display the overwatch
+ * mode button.
+ *
+ * @param stdClass $cm          course module object
  * @param stdClass $attendees   attendees object
- * @param string $tab           the name of the selected tab
- * @param int $groupid          group id
- * @param bool $refresh         wheter the entire page content is needed or just the roster updated
- * @return string               user interface html text
+ * @param bool     $refresh     whether this is an AJAX roster refresh
+ *
+ * @return string               the user interface for the attendees module as HTML
  */
 function attendees_get_ui($cm, $attendees, $refresh = false) {
     global $USER;
@@ -734,11 +747,11 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
 }
 
 /**
- * Tab output.
+ * Generates the user interface for the roster tabs.
  *
  * @param cm_info $cm           course module data
- * @param string $tab           the name of the selected tab
- * @return string               tabs html text
+ * @param stdClass $attendees   attendees object
+ * @return string               user interface html text
  */
 function attendees_roster_tabs($cm, $attendees) {
     global $CFG;
@@ -776,11 +789,12 @@ function attendees_roster_tabs($cm, $attendees) {
 }
 
 /**
- * Get the sign in/out button.
+ * Generates the sign in/out button for the Attendees module.
  *
  * @param cm_info $cm           course module data
  * @param string $tab           the name of the selected tab
- * @return string               button html text
+ * @param stdClass $attendees   attendees object
+ * @return string               sign in/out button html text
  */
 function attendees_sign_inout_button($cm, $tab, $attendees) {
     global $CFG, $USER, $DB, $OUTPUT;
@@ -842,12 +856,14 @@ function attendees_signinout($attendees, $userid) {
     return get_string("messagesigned" . $timecard->event, "attendees", $a);
 }
 
+
 /**
- * Get user's current status.
+ * Get the current status of a user (in or out).
  *
- * @param cm_info $cm           course module data
- * @param stdClass $user        user object
- * @return string               return in or out
+ * @param stdClass $cm       course module data
+ * @param stdClass $user     user data
+ * @param stdClass $attendees attendees object
+ * @return string            'in' or 'out'
  */
 function attendees_current_status($cm, $user, $attendees) {
     return attendees_is_active($user, $attendees) ? "in" : "out";
@@ -988,14 +1004,15 @@ function attendees_lookup($attendees, $code) {
     return get_string("codenotfound", "attendees");
 }
 
+
 /**
- * Get the selected roster view.
+ * Generates the user interface for the roster view.
  *
- * @param cm_info $cm           course module data
- * @param stdClass $users       user object
- * @param string $tab           the name of the selected tab
- * @param bool $refresh         wheter the entire page content is needed or just the roster updated
- * @return string               output html of roster
+ * @param stdClass $cm          course module data
+ * @param array $users         array of user objects to display
+ * @param stdClass $attendees   attendees object
+ * @param bool $refresh        whether to refresh the entire page content or just the roster
+ * @return string               user interface html text
  */
 function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
     global $CFG, $OUTPUT, $DB;
