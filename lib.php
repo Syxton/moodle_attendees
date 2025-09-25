@@ -134,6 +134,13 @@ function attendees_add_instance($data, $mform = null) {
     return $data->id;
 }
 
+/**
+ * Return an array of options from the given object.
+ *
+ * @param stdClass $data The object containing the options.
+ *
+ * @return array An associative array of options.
+ */
 function get_options_as_array($data) {
     return [
         'timecard'          => $data->timecard,
@@ -283,6 +290,14 @@ function attendees_view($attendees, $course, $cm, $context) {
     $completion->set_module_viewed($cm);
 }
 
+/**
+ * Generates the overwatch mode user interface.
+ *
+ * @param stdClass $cm       course module object
+ * @param stdClass $attendees attendees object
+ *
+ * @return string            the overwatch mode user interface as HTML
+ */
 function attendees_overwatch_ui($cm, $attendees) {
     // Default overwatch button action.
     $javascript = "window.location.href = 'view.php?id=$cm->id&view=overwatch';";
@@ -316,6 +331,28 @@ function attendees_overwatch_ui($cm, $attendees) {
     return $content;
 }
 
+/**
+ * Given a course module object, this function returns the location id if it is the only location.
+ *
+ * @param stdClass $cm The course module record.
+ * @return int|false The first unique location id if found, false otherwise.
+ */
+function attendees_get_only_location($cm) {
+    $locations = attendees_get_locations($cm);
+    if (count($locations) == 1) {
+        foreach ($locations as $loc) {
+            return $loc->id;
+        }
+    }
+    return false;
+}
+
+/**
+ * Get all unique locations for the activity.
+ *
+ * @param stdClass $cm The course module record.
+ * @return array The recordset of location records.
+ */
 function attendees_get_locations($cm) {
     global $DB;
 
@@ -323,6 +360,12 @@ function attendees_get_locations($cm) {
     return $locations;
 }
 
+/**
+ * Given an activity id, this function returns the first unique location id.
+ *
+ * @param int $aid The activity id.
+ * @return int|false The first unique location id if found, false otherwise.
+ */
 function attendees_get_location($aid) {
     global $DB;
 
@@ -337,6 +380,14 @@ function attendees_get_location($aid) {
     }
 }
 
+
+/**
+ * Given a location id, this function returns the location record if found.
+ *
+ * @param int $locid The location id.
+ * @return stdClass The location record if found, throws a moodle_exception if not found.
+ * @throws moodle_exception
+ */
 function attendees_get_this_location($locid) {
     global $DB;
 
@@ -346,6 +397,17 @@ function attendees_get_this_location($locid) {
     return $location;
 }
 
+/**
+ * Returns the HTML for the location manager UI.
+ *
+ * This function returns the HTML for the location manager UI, which is used to select the location
+ * that the user will be signing attendees in and out of. The UI includes a radio button for each location,
+ * and buttons for renaming, deleting, and adding new locations.
+ *
+ * @param stdClass $cm The course module record.
+ * @param stdClass $attendees The attendees record.
+ * @return string The HTML for the location manager UI.
+ */
 function attendees_location_manager_ui($cm, $attendees) {
     global $DB;
 
@@ -450,6 +512,14 @@ function attendees_location_manager_ui($cm, $attendees) {
     return $content;
 }
 
+/**
+ * Generates the kiosk mode user interface.
+ *
+ * @param stdClass $cm       course module object
+ * @param stdClass $attendees attendees object
+ *
+ * @return string            the kiosk mode user interface as HTML
+ */
 function attendees_start_kiosk_ui($cm, $attendees) {
     // Default overwatch button action.
     $javascript = "window.location.href = 'view.php?id=$cm->id&view=kiosk';";
@@ -482,6 +552,25 @@ function attendees_start_kiosk_ui($cm, $attendees) {
     return $content;
 }
 
+/**
+ * Generates the attendees menu user interface.
+ *
+ * This function checks if the user has the correct permissions and then
+ * generates the menu based on those permissions.
+ *
+ * If the user has permission to view rosters, it will display the kiosk mode
+ * button if the attendees instance has kiosk mode enabled. It will also
+ * display the location manager button if the user has permission to add
+ * instances.
+ *
+ * If the user has permission to add instances, it will display the overwatch
+ * mode button.
+ *
+ * @param stdClass $cm       course module object
+ * @param stdClass $attendees attendees object
+ *
+ * @return string            the attendees menu user interface as HTML
+ */
 function attendees_menu_ui($cm, $attendees) {
     $context = context_module::instance($cm->id);
 
@@ -494,7 +583,6 @@ function attendees_menu_ui($cm, $attendees) {
         $url = new moodle_url('/course/view.php', ['id' => $cm->course]);
         redirect($url);
     }
-
 
     $content = '<div class="attendees_menu">';
 
@@ -586,6 +674,14 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
     }
 
     if (!$refresh) {
+        if (!$attendees->location) {
+            // Auto select only location if only one exists and user cannot add instances.
+            if (!$attendees->location = attendees_get_only_location($cm)) {
+                $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
+                redirect($url, "No locations found");
+            }
+        }
+
         $location = attendees_get_this_location($attendees->location);
         $url = new moodle_url('/course/view.php', ['id' => $cm->course]);
         $content .= '
@@ -983,13 +1079,18 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
     return $output;
 }
 
+
 /**
- * Filter list of users.
+ * Filter out users based on current sign in status and settings.
  *
- * @param stdClass $attendees   attendees object
- * @param array $allusers       array of all possible users
- * @param string $type          selected tab (onlyin, onlyout)
- * @return array                array of filtered usrs
+ * This function takes an array of all users and filters out users based on the following criteria:
+ * - If autosignout is enabled, filter out users who have not signed in recently.
+ * - If tab is set to "onlyin", verify active users are in the enrolled users list.
+ * - If tab is set to "onlyout", subtract the active users list from the all users list.
+ *
+ * @param stdClass $attendees The module instance settings.
+ * @param array $allusers An array of all users.
+ * @return array The filtered array of users.
  */
 function filteroutusers($attendees, $allusers): array {
     global $DB;

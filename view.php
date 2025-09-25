@@ -69,7 +69,13 @@ if (empty($options['printintro'])) {
 }
 
 $PAGE->set_title($course->shortname.': ' . $attendees->name);
-$PAGE->set_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => $attendees->view, 'location' => $attendees->location, 'tab' => $attendees->tab, 'group' => $attendees->group]);
+$PAGE->set_url('/mod/attendees/view.php', [
+    'id' => $cm->id,
+    'view' => $attendees->view,
+    'location' => $attendees->location,
+    'tab' => $attendees->tab,
+    'group' => $attendees->group,
+]);
 $PAGE->add_body_class('limitedwidth');
 $PAGE->activityheader->set_attrs($activityheader);
 $PAGE->activityheader->disable();
@@ -78,17 +84,6 @@ $PAGE->activityheader->disable();
 $canaddinstance = has_capability('mod/attendees:addinstance', $context);
 $canviewrosters = has_capability('mod/attendees:viewrosters', $context);
 $canviewhistory = has_capability('mod/attendees:viewhistory', $context);
-
-// Auto select only location if only one exists and user cannot add instances.
-$locations = attendees_get_locations($cm);
-if (!$canaddinstance) {
-    if (count($locations) == 1) {
-        foreach ($locations as $loc) {
-            error_log("Auto selecting location " . $loc->id);
-            $attendees->location = $loc->id;
-        }
-    }
-}
 
 // If using separate locations and no location selected, force menu view.
 if (empty($attendees->location) && empty($attendees->view)) {
@@ -134,7 +129,7 @@ if ($attendees->kioskmode && $attendees->view === "kiosk") {
 }
 
 // Check for valid location data.
-if (!$locations) { // No locations found.
+if (!$locations = attendees_get_locations($cm)) { // No locations found.
     if ($attendees->view !== "newlocation") { // Only the menu is allowed.
         $attendees->view = "menu";
         if (!$canaddinstance) {
@@ -146,7 +141,7 @@ if (!$locations) { // No locations found.
 }
 
 // Auto update and keep alive for overwatch and kiosk mode.
-$auto_update = '
+$autoupdate = '
     <iframe id="attendees_keepalive" src="' . $CFG->wwwroot . '"></iframe>
     <script type="module">
         require(["jquery"], function (jQuery) {
@@ -199,7 +194,7 @@ switch ($attendees->view) {
                 <p>
                 ' . $attendees->intro . '
                 </p>
-                ' . $auto_update . '
+                ' . $autoupdate . '
                 ' . attendees_get_ui($cm, $attendees) . '
             </div>';
         } else {
@@ -220,7 +215,7 @@ switch ($attendees->view) {
         }
         break;
     case "overwatch":
-        $content .= $auto_update . attendees_get_ui($cm, $attendees);
+        $content .= $autoupdate . attendees_get_ui($cm, $attendees);
         break;
     case "newlocation":
         $location = [
@@ -270,7 +265,7 @@ switch ($attendees->view) {
         break;
     default:
         // Default view is the normal roster view.
-        $content .= $auto_update . attendees_get_ui($cm, $attendees);
+        $content .= $autoupdate . attendees_get_ui($cm, $attendees);
         break;
 }
 
