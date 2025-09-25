@@ -608,7 +608,6 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
         ' . $groupselector;
     }
 
-
     // Roster.
     if ($viewrosters || $attendees->showroster) {
         if (has_capability('mod/attendees:signinout', $context)) {
@@ -888,7 +887,7 @@ function attendees_lookup($attendees, $code) {
  */
 function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
     global $CFG, $OUTPUT, $DB;
-    require_once($CFG->libdir.'/filelib.php');
+    require_once($CFG->libdir . '/filelib.php');
 
     $context = context_module::instance($cm->id);
     $signinoutothers = has_capability('mod/attendees:signinoutothers', $context);
@@ -929,12 +928,15 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
                             name="code"
                             id="code"
                             style="margin: 0 5px;"
-                            onblur="this.focus()" autofocus />
+                            onblur="setInterval(function() { if (document.activeElement === document.body) { document.getElementById(\'code\').focus(); } } , 100);" />
                     <input  class="btn btn-primary"
                             type="submit"
                             style="vertical-align: top;"
                             value="' . get_string("signinout", "attendees") . '" />
                 </form>
+                <script>
+                    document.getElementById("code").focus();
+                </script>
             </div>';
     }
 
@@ -966,13 +968,13 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
         if (!empty($attendees->timecard) && !empty($signinoutothers) &&
             (empty($attendees->kioskmode) || (!empty($attendees->kioskmode) && !empty($attendees->kioskbuttons) || $attendees->view === "overwatch"))) {
             $href = ' href="' . $url . "&userid=$user->id" . '"';
-            $output .= '<a class="attendees_otherinout_button" ' . $href . $alt . ' >' .
-                            $icons .
-                       '</a>';
+            $output .= '
+                <a class="attendees_otherinout_button" ' . $href . $alt . ' >
+                ' . $icons . '
+                </a>';
         }
 
-        $userpic = $OUTPUT->user_picture($user, $options);
-        $output .= $userpic;
+        $output .= $OUTPUT->user_picture($user, $options);
         $output .= '<div class="attendees_name"> ' . $user->firstname . ' ' . $user->lastname . '</div>';
         $output .= attendees_list_user_groups($cm, $attendees, $user->id);
         $output .= '</div>';
