@@ -48,7 +48,7 @@
  * @param int $oldversion   version number of current block
  */
 function xmldb_attendees_upgrade($oldversion) {
-    global $CFG, $DB;
+    global $DB;
 
     $dbman = $DB->get_manager();
 
@@ -94,7 +94,16 @@ function xmldb_attendees_upgrade($oldversion) {
     if ($oldversion < 2024041005) {
         // Rename description field to intro, and define field introformat to be added to scheduler.
         $table = new xmldb_table('attendees');
-        $locationsfield = new xmldb_field('multiplelocations', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'kioskbuttons');
+        $locationsfield = new xmldb_field('
+            multiplelocations',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'kioskbuttons'
+        );
         if ($dbman->field_exists($table, $locationsfield)) {
             $dbman->rename_field($table, $locationsfield, 'separatelocations', false);
         }

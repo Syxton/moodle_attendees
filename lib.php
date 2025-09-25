@@ -442,6 +442,10 @@ function attendees_location_manager_ui($cm, $attendees) {
                         </span>
                     </div>';
             if ($canaddinstance) {
+                $editing = '#locationsave_' . $l->id . ', #locationcancel_' . $l->id . ', #locationnameedit_' . $l->id;
+                $notediting = '#locationname_' . $l->id . ', #locationrename_' . $l->id;
+                $url = 'window.location.href = \'view.php?id=' . $cm->id . '&view=updatelocation&location=' . $l->id;
+                $url .= '&newname=\' + encodeURIComponent(jQuery(\'#locationnameedit_' . $l->id . '\').val()); return false;';
                 $locationlist .= '
                 <div>
                     <a  title="Rename" id="locationrename_' . $l->id . '"
@@ -449,8 +453,8 @@ function attendees_location_manager_ui($cm, $attendees) {
                         class="btn"
                         style="color: #297e14ff;"
                         onclick="
-                            jQuery(\'#locationname_' . $l->id . ', #locationrename_' . $l->id . '\').hide();
-                            jQuery(\'#locationsave_' . $l->id . ', #locationcancel_' . $l->id . ', #locationnameedit_' . $l->id . '\').show();"
+                            jQuery(\'' . $notediting . '\').hide();
+                            jQuery(\'' . $editing . '\').show();"
                     >
                         <i class="fa-solid fa-pen-to-square"></i>
                     </a>
@@ -459,7 +463,7 @@ function attendees_location_manager_ui($cm, $attendees) {
                         href="javascript: void(0);"
                         class="btn"
                         style="color: #5d3addff;display: none;"
-                        onclick="window.location.href = \'view.php?id=' . $cm->id . '&view=updatelocation&location=' . $l->id . '&newname=\' + encodeURIComponent(jQuery(\'#locationnameedit_' . $l->id . '\').val()); return false;"
+                        onclick="' . $url . '"
                     >
                         <i class="fa-solid fa-floppy-disk"></i>
                     </a>
@@ -469,8 +473,8 @@ function attendees_location_manager_ui($cm, $attendees) {
                         class="btn"
                         style="display: none;"
                         onclick="
-                            jQuery(\'#locationsave_' . $l->id . ', #locationcancel_' . $l->id . ', #locationnameedit_' . $l->id . '\').hide();
-                            jQuery(\'#locationname_' . $l->id . ', #locationrename_' . $l->id . '\').show();"
+                            jQuery(\'' . $editing . '\').hide();
+                            jQuery(\'' . $notediting . '\').show();"
                     >
                         <i class="fa-solid fa-ban"></i>
                     </a>
@@ -637,7 +641,12 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
             && !$refresh
             && (!$attendees->kioskmode
             || $attendees->view === "overwatch")) {
-            $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => $attendees->view, 'location' => $attendees->location, 'tab' => $tab]);
+            $url = new moodle_url('/mod/attendees/view.php', [
+                'id' => $cm->id,
+                'view' => $attendees->view,
+                'location' => $attendees->location,
+                'tab' => $tab,
+            ]);
             $groupselector = groups_print_activity_menu($cm, $url, true);
         }
     }
@@ -664,7 +673,10 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
     }
 
     // Data History link.
-    if ($attendees->view !== "kiosk" && !$refresh && $attendees->timecard && has_capability('mod/attendees:viewhistory', $context)) {
+    if ($attendees->view !== "kiosk"
+        && !$refresh
+        && $attendees->timecard
+        && has_capability('mod/attendees:viewhistory', $context)) {
         $content .= '
         <div class="attendees_history">
             <a href="view.php?id=' . $cm->id . '&view=history">
@@ -733,7 +745,11 @@ function attendees_roster_tabs($cm, $attendees) {
     $all = $onlyin = $onlyout = "";
     $tab = $attendees->tab;
     $$tab = 'active active_tree_node';
-    $url = "$CFG->wwwroot/mod/attendees/view.php?id=$cm->id&location=$attendees->location&view=$attendees->view&group=$attendees->group&tab=";
+    $i = $cm->id;
+    $l = $attendees->location;
+    $v = $attendees->view;
+    $g = $attendees->group;
+    $url = "$CFG->wwwroot/mod/attendees/view.php?id=$i&location=$l&view=$v&group=$g&tab=";
 
     return '
     <div class="attendees_tabs secondary-navigation d-print-none">
@@ -1024,7 +1040,12 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
                             name="code"
                             id="code"
                             style="margin: 0 5px;"
-                            onblur="setInterval(function() { if (document.activeElement === document.body) { document.getElementById(\'code\').focus(); } } , 100);" />
+                            onblur="setInterval(function() {
+                                        if (document.activeElement === document.body) {
+                                            document.getElementById(\'code\').focus();
+                                        }
+                                    } , 100);"
+                    />
                     <input  class="btn btn-primary"
                             type="submit"
                             style="vertical-align: top;"
@@ -1061,8 +1082,12 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
         $output .= '<div class="attendees_userblock attendees_status_'. $status . '">';
 
         // Only show icons if timecard is enabled and has permissions.
-        if (!empty($attendees->timecard) && !empty($signinoutothers) &&
-            (empty($attendees->kioskmode) || (!empty($attendees->kioskmode) && !empty($attendees->kioskbuttons) || $attendees->view === "overwatch"))) {
+        if (!empty($attendees->timecard)
+            && !empty($signinoutothers)
+            && (empty($attendees->kioskmode)
+                || (!empty($attendees->kioskmode) && !empty($attendees->kioskbuttons)
+                || $attendees->view === "overwatch")
+            )) {
             $href = ' href="' . $url . "&userid=$user->id" . '"';
             $output .= '
                 <a class="attendees_otherinout_button" ' . $href . $alt . ' >
