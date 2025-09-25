@@ -856,7 +856,6 @@ function attendees_signinout($attendees, $userid) {
     return get_string("messagesigned" . $timecard->event, "attendees", $a);
 }
 
-
 /**
  * Get the current status of a user (in or out).
  *
@@ -870,11 +869,18 @@ function attendees_current_status($cm, $user, $attendees) {
 }
 
 /**
- * Attendees user interface.
+ * Checks if a user is currently signed in or out.
  *
- * @param stdClass $user        user object
- * @param int $aid              attendees instance id
- * @return bool                 is user active
+ * This function first checks if the user has ever signed in or out.
+ * If they have, it checks if the user has signed out on the current day.
+ * If they have and the last action was a sign out, it returns false.
+ * If they have and the last action was a sign in, it returns true.
+ * If they have not signed in or out on the current day, it returns false.
+ * If they have never signed in or out, it returns false.
+ *
+ * @param stdClass $user        user data
+ * @param stdClass $attendees   attendees object
+ * @return bool                 true if signed in, false if signed out
  */
 function attendees_is_active($user, $attendees) {
     global $DB;

@@ -181,7 +181,6 @@ $autoupdate = '
     </script>
 ';
 
-echo $OUTPUT->header();
 $content = "";
 switch ($attendees->view) {
     case "menu":
@@ -276,5 +275,6 @@ $formatoptions = (object) [
 ];
 $content = format_text($content, FORMAT_HTML, $formatoptions);
 
+echo $OUTPUT->header();
 echo $OUTPUT->box($content, "center");
 echo $OUTPUT->footer();
