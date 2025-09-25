@@ -57,7 +57,7 @@ function xmldb_attendees_upgrade($oldversion) {
         $table = new xmldb_table('attendees');
         $iplockfield = new xmldb_field('iplock', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'kioskbuttons');
         if ($dbman->field_exists($table, $iplockfield)) {
-            $dbman->rename_field($table, $iplockfield, 'multiplelocations', false);
+            $dbman->rename_field($table, $iplockfield, 'separatelocations', false);
         }
 
         // Add location field to attendees_timecard.
@@ -89,6 +89,18 @@ function xmldb_attendees_upgrade($oldversion) {
 
         // Savepoint reached.
         upgrade_mod_savepoint(true, 2024041001, 'attendees');
+    }
+
+    if ($oldversion < 2024041005) {
+        // Rename description field to intro, and define field introformat to be added to scheduler.
+        $table = new xmldb_table('attendees');
+        $locationsfield = new xmldb_field('multiplelocations', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'kioskbuttons');
+        if ($dbman->field_exists($table, $locationsfield)) {
+            $dbman->rename_field($table, $locationsfield, 'separatelocations', false);
+        }
+
+        // Savepoint reached.
+        upgrade_mod_savepoint(true, 2024041005, 'attendees');
     }
 
     return true;

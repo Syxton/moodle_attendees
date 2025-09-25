@@ -39,8 +39,8 @@ if ($ADMIN->fulltree) {
         get_string('lockview', 'attendees'), get_string('lockviewexplain', 'attendees'), 0));
     $settings->add(new admin_setting_configcheckbox('attendees/kioskmode',
         get_string('kioskmode', 'attendees'), get_string('kioskmodeexplain', 'attendees'), 0));
-    $settings->add(new admin_setting_configcheckbox('attendees/multiplelocations',
-        get_string('multiplelocations', 'attendees'), get_string('multiplelocationsexplain', 'attendees'), 0));
+    $settings->add(new admin_setting_configcheckbox('attendees/separatelocations',
+        get_string('separatelocations', 'attendees'), get_string('separatelocationsexplain', 'attendees'), 0));
     $settings->add(new admin_setting_configcheckbox('attendees/kioskbuttons',
         get_string('kioskbuttons', 'attendees'), get_string('kioskbuttonsexplain', 'attendees'), 0));
     $searchfields = [

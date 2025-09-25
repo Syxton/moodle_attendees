@@ -143,7 +143,7 @@ function get_options_as_array($data) {
         'lockview'          => $data->lockview,
         'kioskmode'         => $data->kioskmode,
         'kioskbuttons'      => $data->kioskbuttons,
-        'multiplelocations' => $data->multiplelocations,
+        'separatelocations' => $data->separatelocations,
         'searchfields'      => $data->searchfields,
     ];
 }
@@ -284,6 +284,23 @@ function attendees_view($attendees, $course, $cm, $context) {
 }
 
 function attendees_overwatch_ui($cm, $attendees) {
+    // Default overwatch button action.
+    $javascript = "window.location.href = 'view.php?id=$cm->id&view=overwatch';";
+
+    // If more than one location exists, require a location to be selected.
+    if (empty($attendees->location)) {
+        $locations = attendees_get_locations($cm);
+        if (count($locations) > 1) {
+            $javascript = "
+            let locationvalue = jQuery('input.attendees_location:checked').val();
+            if (locationvalue) {
+                window.location.href = 'view.php?id=$cm->id&view=overwatch&location=' + locationvalue;
+            } else if (locationvalue === undefined || locationvalue === 0) {
+                alert('You must select a location');
+            }";
+        }
+    }
+
     $content = '
         <div class="attendees_menu_element" style="min-width: 200px;">
             <h3>Overwatch Mode</h3>
@@ -291,13 +308,7 @@ function attendees_overwatch_ui($cm, $attendees) {
             <button
                 type="button"
                 href="javascript: void(0);"
-                onclick="
-                    let locationvalue = jQuery(\'.locationlist input:checked\').val();
-                    if (locationvalue) {
-                        window.location.href = \'view.php?id=' . $cm->id . '&view=overwatch&location=\' + locationvalue;
-                    } else if (locationvalue === undefined || locationvalue === 0) {
-                        alert(\'You must select a location\');
-                    }">
+                onclick="' . $javascript . '">
                 <i class="fa-solid fa-binoculars"></i> ' . get_string('overwatch', 'mod_attendees') . '
             </button>
         </div>';
@@ -305,17 +316,50 @@ function attendees_overwatch_ui($cm, $attendees) {
     return $content;
 }
 
+function attendees_get_locations($cm) {
+    global $DB;
+
+    $locations = $DB->get_records_select('attendees_locations', 'aid', [$cm->id]);
+    return $locations;
+}
+
+function attendees_get_location($aid) {
+    global $DB;
+
+    $cm = get_coursemodule_from_instance('attendees', $aid);
+    if (!$locations = attendees_get_locations($cm)) {
+        return false;
+    }
+
+    // Return first location.
+    foreach ($locations as $loc) {
+        return $loc->id;
+    }
+}
+
+function attendees_get_this_location($locid) {
+    global $DB;
+
+    if (!$location = $DB->get_record_select('attendees_locations', 'id = ?', [$locid])) {
+        throw new moodle_exception('invalidlocation', 'attendees');
+    }
+    return $location;
+}
+
 function attendees_location_manager_ui($cm, $attendees) {
     global $DB;
 
+    $context = context_module::instance($cm->id);
+    $canaddinstance = has_capability('mod/attendees:addinstance', $context);
+
     $locationlist = '';
-    $locations = $DB->get_records_select('attendees_locations', 'aid', [$cm->id]);
+    $locations = attendees_get_locations($cm);
     if ($locations) {
-        $locationlist = '<div style="text-align: left;" class="locationlist">';
+        $locationlist = '<div class="locationlist">';
         // Build groupid array.
         foreach ($locations as $l) {
+            $locationlist .= '<div class="locationlist_item">';
             $locationlist .= '
-                <div class="locationlist_item" style="display: flex;justify-content: space-between;align-items: center;">
                     <div>
                         <input
                             type="radio"
@@ -334,66 +378,70 @@ function attendees_location_manager_ui($cm, $attendees) {
                             style="padding: 4px;">
                             ' . $l->name . '
                         </span>
-                    </div>
-                    <div>
-                        <a  title="Rename" id="locationrename_' . $l->id . '"
-                            href="javascript: void(0);"
-                            class="btn"
-                            style="color: #297e14ff;"
-                            onclick="
-                                jQuery(\'#locationname_' . $l->id . ', #locationrename_' . $l->id . '\').hide();
-                                jQuery(\'#locationsave_' . $l->id . ', #locationcancel_' . $l->id . ', #locationnameedit_' . $l->id . '\').show();"
-                        >
-                            <i class="fa-solid fa-pen-to-square"></i>
-                        </a>
-                        <a  title="Save"
-                            id="locationsave_' . $l->id . '"
-                            href="javascript: void(0);"
-                            class="btn"
-                            style="color: #5d3addff;display: none;"
-                            onclick="window.location.href = \'view.php?id=' . $cm->id . '&view=updatelocation&location=' . $l->id . '&newname=\' + encodeURIComponent(jQuery(\'#locationnameedit_' . $l->id . '\').val()); return false;"
-                        >
-                            <i class="fa-solid fa-floppy-disk"></i>
-                        </a>
-                        <a  title="Cancel"
-                            id="locationcancel_' . $l->id . '"
-                            href="javascript: void(0);"
-                            class="btn"
-                            style="display: none;"
-                            onclick="
-                                jQuery(\'#locationsave_' . $l->id . ', #locationcancel_' . $l->id . ', #locationnameedit_' . $l->id . '\').hide();
-                                jQuery(\'#locationname_' . $l->id . ', #locationrename_' . $l->id . '\').show();"
-                        >
-                            <i class="fa-solid fa-ban"></i>
-                        </a>
-                        <a  title="Delete"
-                            href="javascript: void(0);"
-                            class="btn"
-                            style="color: #d33;"
-                            onclick="
-                                if (confirm(\'Are you sure you want to delete this location\')) {
-                                    window.location.href = \'view.php?id=' . $cm->id . '&view=deletelocation&location=' . $l->id . '\';
-                                }"
-                        >
-                            <i class="fa-solid fa-trash"></i>
-                        </a>
-                    </div>
+                    </div>';
+            if ($canaddinstance) {
+                $locationlist .= '
+                <div>
+                    <a  title="Rename" id="locationrename_' . $l->id . '"
+                        href="javascript: void(0);"
+                        class="btn"
+                        style="color: #297e14ff;"
+                        onclick="
+                            jQuery(\'#locationname_' . $l->id . ', #locationrename_' . $l->id . '\').hide();
+                            jQuery(\'#locationsave_' . $l->id . ', #locationcancel_' . $l->id . ', #locationnameedit_' . $l->id . '\').show();"
+                    >
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+                    <a  title="Save"
+                        id="locationsave_' . $l->id . '"
+                        href="javascript: void(0);"
+                        class="btn"
+                        style="color: #5d3addff;display: none;"
+                        onclick="window.location.href = \'view.php?id=' . $cm->id . '&view=updatelocation&location=' . $l->id . '&newname=\' + encodeURIComponent(jQuery(\'#locationnameedit_' . $l->id . '\').val()); return false;"
+                    >
+                        <i class="fa-solid fa-floppy-disk"></i>
+                    </a>
+                    <a  title="Cancel"
+                        id="locationcancel_' . $l->id . '"
+                        href="javascript: void(0);"
+                        class="btn"
+                        style="display: none;"
+                        onclick="
+                            jQuery(\'#locationsave_' . $l->id . ', #locationcancel_' . $l->id . ', #locationnameedit_' . $l->id . '\').hide();
+                            jQuery(\'#locationname_' . $l->id . ', #locationrename_' . $l->id . '\').show();"
+                    >
+                        <i class="fa-solid fa-ban"></i>
+                    </a>
+                    <a  title="Delete"
+                        href="javascript: void(0);"
+                        class="btn"
+                        style="color: #d33;"
+                        onclick="
+                            if (confirm(\'Are you sure you want to delete this location\')) {
+                                window.location.href = \'view.php?id=' . $cm->id . '&view=deletelocation&location=' . $l->id . '\';
+                            }"
+                    >
+                        <i class="fa-solid fa-trash"></i>
+                    </a>
                 </div>';
+            }
+            $locationlist .= '</div>';
         }
         $locationlist .= '</div>';
     }
 
     // Add a new location button.
-    $locationlist .= '
+    if ($canaddinstance) {
+        $locationlist .= '
         <button
             type="button"
-            style="float: right"
             onclick="window.location.href = \'view.php?id=' . $cm->id . '&view=newlocation\'">
             Add New Location
         </button>';
+    }
 
     $content = '
-        <div class="attendees_menu_element" style="min-width: 200px;width: 100%;max-width: 500px;">
+        <div class="attendees_menu_element">
             <h3>Location Selector</h3>
             <p style="font-size: 0.9em;">Select the location you will be signing attendees in and out of.</p>
             ' . $locationlist . '
@@ -403,19 +451,30 @@ function attendees_location_manager_ui($cm, $attendees) {
 }
 
 function attendees_start_kiosk_ui($cm, $attendees) {
+    // Default overwatch button action.
+    $javascript = "window.location.href = 'view.php?id=$cm->id&view=kiosk';";
+
+    // If more than one location exists, require a location to be selected.
+    if (empty($attendees->location)) {
+        $locations = attendees_get_locations($cm);
+        if (count($locations) > 1) {
+            $javascript = "
+            let locationvalue = jQuery('input.attendees_location:checked').val();
+            if (locationvalue) {
+                window.location.href = 'view.php?id=$cm->id&view=kiosk&location=' + locationvalue;
+            } else if (locationvalue === undefined || locationvalue === 0) {
+                alert('You must select a location');
+            }";
+        }
+    }
+
     $content = '
-        <div class="attendees_menu_element" style="min-width: 200px;">
+        <div class="attendees_menu_element">
             <h3>Kiosk Mode</h3>
             <p style="font-size: 0.9em;">Use kiosk mode to view the attendees list.</p>
             <button
                 type="button"
-                onclick="
-                    let locationvalue = jQuery(\'.locationlist input:checked\').val();
-                    if (locationvalue) {
-                        window.location.href = \'view.php?id=' . $cm->id . '&view=kiosk&location=\' + locationvalue;
-                    } else if (locationvalue === undefined || locationvalue === 0) {
-                        alert(\'You must select a location\');
-                    }">
+                onclick="' . $javascript . '">
                 <i class="fa-solid fa-tv"></i> ' . get_string('startkiosk', 'mod_attendees') . '
             </button>
         </div>';
@@ -426,25 +485,28 @@ function attendees_start_kiosk_ui($cm, $attendees) {
 function attendees_menu_ui($cm, $attendees) {
     $context = context_module::instance($cm->id);
 
+    $canaddinstance = has_capability('mod/attendees:addinstance', $context);
+    $canviewrosters = has_capability('mod/attendees:viewrosters', $context);
+
     // Only teachers should see this menu.
-    if (!has_capability('mod/attendees:viewrosters', $context)) {
+    if (!$canviewrosters) {
         // The user doesn't have permission to be here so go back to course page.
-        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        $url = new moodle_url('/course/view.php', ['id' => $cm->course]);
         redirect($url);
     }
 
 
-    $content = '<div class="attendees_menu" style="display: flex;gap: 10px;flex-wrap: wrap;justify-content: space-evenly;align-items: flex-start;">';
+    $content = '<div class="attendees_menu">';
 
-    $content .= attendees_overwatch_ui($cm, $attendees);
-
-    if ($attendees->kioskmode) {
+    if ($canviewrosters && $attendees->kioskmode) {
         $content .= attendees_start_kiosk_ui($cm, $attendees);
-    } else {
-        $content .= attendees_get_ui($cm, $attendees);
     }
 
-    if ($attendees->multiplelocations) {
+    if ($canaddinstance) {
+        $content .= attendees_overwatch_ui($cm, $attendees);
+    }
+
+    if ($canviewrosters) {
         $content .= attendees_location_manager_ui($cm, $attendees);
     }
 
@@ -473,25 +535,22 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
     $viewrosters = has_capability('mod/attendees:viewrosters', $context);
 
     $content = "";
-    // Show single user sign in button if the timecard feature is being used.
-    // And the user is a student.
-    // And the activity is NOT in kiosk mode (shouldn't get this far).
-    // And it isn't an ajax roster refresh.
-    if (!$viewrosters && !$attendees->kioskmode && $attendees->timecard && !$refresh
-        && is_enrolled($context, $USER, 'mod/attendees:signinout', true)) {
-        $content .= attendees_sign_inout_button($cm, $tab, $attendees);
-    }
+    $groupselector = "";
 
     // GROUP MODE.
     if ($groupmode = groups_get_activity_groupmode($cm)) {
-        $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
         if (!$groupid) {
             $groupid = groups_get_activity_group($cm);
         }
         $allgroups = groups_get_all_groups($cm->course, 0, $cm->groupingid);
+
         // Only show selector if there is more than 1 group to show.
-        if (count($allgroups) > 1 && !$refresh && !$attendees->kioskmode) {
-            $content .= '<div class="group_selector">' . groups_print_activity_menu($cm, $url, true) . "</div>";
+        if (count($allgroups) > 1
+            && !$refresh
+            && (!$attendees->kioskmode
+            || $attendees->view === "overwatch")) {
+            $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => $attendees->view, 'location' => $attendees->location, 'tab' => $tab]);
+            $groupselector = groups_print_activity_menu($cm, $url, true);
         }
     }
 
@@ -503,15 +562,52 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
         $users = get_enrolled_users($context, 'mod/attendees:signinout', $groupid, 'u.*', 'lastname ASC');
     }
 
+    // Show single user sign in button if the timecard feature is being used.
+    // And the user is a student.
+    // And the activity is NOT in kiosk mode (shouldn't get this far).
+    // And it isn't an ajax roster refresh.
+    if (!$viewrosters
+        && !$attendees->kioskmode
+        && $attendees->timecard
+        && !$refresh
+        && is_enrolled($context, $USER, 'mod/attendees:signinout', true)
+        && in_array($USER->id, array_column($users, 'id'))) {
+        $content .= attendees_sign_inout_button($cm, $tab, $attendees);
+    }
+
     // Data History link.
     if ($attendees->view !== "kiosk" && !$refresh && $attendees->timecard && has_capability('mod/attendees:viewhistory', $context)) {
         $content .= '
-            <div class="attendees_history">
-                <a href="view.php?id=' . $cm->id . '&view=history">
-                ' . get_string('history', 'mod_attendees') . '
-                </a>
-            </div>';
+        <div class="attendees_history">
+            <a href="view.php?id=' . $cm->id . '&view=history">
+            ' . get_string('history', 'mod_attendees') . '
+            </a>
+        </div>';
     }
+
+    if (!$refresh) {
+        $location = attendees_get_this_location($attendees->location);
+        $url = new moodle_url('/course/view.php', ['id' => $cm->course]);
+        $content .= '
+        <style>
+            .attendees_hidden_link {
+                color: initial;
+                text-decoration: none;
+            }
+            .attendees_hidden_link:hover {
+                text-decoration: none;
+                color: initial;
+                cursor: default;
+            }
+        </style>
+        <h2>
+            <a href="' . $url . '" class="attendees_hidden_link">
+                <i class="fa-solid fa-location-dot"></i>
+            </a> ' . $location->name . '
+        </h2>
+        ' . $groupselector;
+    }
+
 
     // Roster.
     if ($viewrosters || $attendees->showroster) {
@@ -607,6 +703,12 @@ function attendees_signinout($attendees, $userid) {
     $user = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
     $time = new DateTime("now", core_date::get_server_timezone_object());
 
+    if (empty($attendees->location)) {
+        if (!$attendees->location = attendees_get_location($attendees->id)) {
+            throw new coding_exception('No location defined for this activity.');
+        }
+    }
+
     $timecard = (object) [
         'userid' => $user->id,
         'aid' => $attendees->id,
@@ -650,16 +752,16 @@ function attendees_current_status($cm, $user, $attendees) {
 function attendees_is_active($user, $attendees) {
     global $DB;
 
-    $multiplelocations = "";
-    if ($attendees->multiplelocations) {
-        $multiplelocations = "AND location = ?";
+    $separatelocations = "";
+    if ($attendees->separatelocations) {
+        $separatelocations = "AND location = ?";
     }
 
     $sql = "SELECT * FROM {attendees_timecard}
         WHERE aid = ?
         AND event = ?
         AND userid = ?
-        $multiplelocations
+        $separatelocations
         ORDER BY timelog
         DESC LIMIT 1";
     $lastout = $DB->get_record_sql($sql, [$attendees->id, 'out', $user->id, $attendees->location]);
@@ -802,7 +904,7 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
     if ($attendees->kioskmode && $attendees->timecard && !$refresh) {
         $output .= '
             <div class="attendees_usersearch">
-                <form method="get" action="' . $url . '" style="width: 450px;margin: auto;">
+                <form method="get" action="' . $url . '" style="padding: 10px;width: 450px;margin: auto;">
                     <input  type="hidden"
                             name="id"
                             id="id"
@@ -826,6 +928,7 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
                             type="password"
                             name="code"
                             id="code"
+                            style="margin: 0 5px;"
                             onblur="this.focus()" autofocus />
                     <input  class="btn btn-primary"
                             type="submit"
@@ -901,9 +1004,9 @@ function filteroutusers($attendees, $allusers): array {
         $attendees->id,
     ];
 
-    $multiplelocations = "";
-    if ($attendees->multiplelocations) {
-        $multiplelocations = "AND location = ?";
+    $separatelocations = "";
+    if ($attendees->separatelocations) {
+        $separatelocations = "AND location = ?";
         $params[] = $attendees->location; // Add location to parameters.
         $params[] = $attendees->location; // Add twice since we use it twice in the query.
     }
@@ -919,8 +1022,8 @@ function filteroutusers($attendees, $allusers): array {
                                 FROM {attendees_timecard} t
                                 WHERE t.userid = tc.userid
                                 AND t.aid = ?
-                                $multiplelocations)
-           $multiplelocations
+                                $separatelocations)
+           $separatelocations
           ORDER BY u.lastname";
 
     $activeusers = $DB->get_records_sql($sql, $params);
@@ -974,7 +1077,7 @@ function attendees_list_user_groups($cm, $attendees, $userid): string {
  */
 function attendees_history_ui($cm, $attendees) {
     // URL for the main view of the attendees module.
-    $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
+    $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
 
     // Instantiate the myform form from within the plugin.
     $mform = new \mod_attendees\form\historyform(null, ['cm' => $cm, 'attendees' => $attendees]);
@@ -1247,7 +1350,7 @@ function get_users_next_signin($attendees, $login) {
     $params = [];
 
     $locationsql = ""; // If multiple locations is enabled.
-    if ($attendees->multiplelocations) {
+    if ($attendees->separatelocations) {
         [$locsql, $locp] = $DB->get_in_or_equal($login->lid, SQL_PARAMS_NAMED, 'location');
         $locationsql = " AND t.location {$locsql}";
         $params += $locp;
@@ -1285,7 +1388,7 @@ function get_users_next_signout($attendees, $login) {
     $params = [];
 
     $locationsql = ""; // If multiple locations is enabled.
-    if ($attendees->multiplelocations) {
+    if ($attendees->separatelocations) {
         [$locsql, $locp] = $DB->get_in_or_equal($login->lid, SQL_PARAMS_NAMED, 'location');
         $locationsql = " AND t.location {$locsql}";
         $params += $locp;

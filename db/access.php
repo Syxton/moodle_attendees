@@ -58,6 +58,7 @@ $capabilities = [
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => [
             'editingteacher' => CAP_ALLOW,
+            'teacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW,
         ],
     ],
@@ -77,7 +78,6 @@ $capabilities = [
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => [
             'editingteacher' => CAP_ALLOW,
-            'teacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW,
         ],
     ],

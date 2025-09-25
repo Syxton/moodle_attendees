@@ -138,7 +138,7 @@ a.attendees_otherinout_button {
 }
 
 .attendees_kioskmode {
-    padding: 50px;
+    padding: 0 50px 50px 50px;
 }
 
 .attendees_refreshable {
@@ -180,4 +180,52 @@ a.attendees_otherinout_button {
 
 .attendees_history {
     float: right;
+}
+
+.attendees_menu {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    align-items: flex-start;
+}
+
+.attendees_menu_element {
+    min-width: 200px;width: 100%;max-width: 500px;
+    width: 100%;
+    max-width: 500px;
+    padding: 10px;
+    border: 1px solid silver;
+    border-radius: 10px;
+}
+
+.attendees_menu_element button {
+    display: block;
+    margin: auto;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid silver;
+    color: darkred;
+}
+
+.attendees_menu_element button:hover {
+    background-color: #edecec;
+}
+
+.locationlist {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.locationlist_item {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 6px;
+}
+
+.locationlist_item:hover {
+    background-color: #f1f1f1;
 }

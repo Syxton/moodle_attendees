@@ -110,9 +110,9 @@ class mod_attendees_mod_form extends moodleform_mod {
         $mform->setDefault('autosignout', $config->autosignout);
         $mform->hideIf('autosignout', 'timecard', 'eq', 0);
 
-        $mform->addElement('advcheckbox', 'multiplelocations', get_string('multiplelocations', 'attendees'));
-        $mform->setDefault('multiplelocations', $config->multiplelocations);
-        $mform->hideIf('multiplelocations', 'timecard', 'eq', 0);
+        $mform->addElement('advcheckbox', 'separatelocations', get_string('separatelocations', 'attendees'));
+        $mform->setDefault('separatelocations', $config->separatelocations);
+        $mform->hideIf('separatelocations', 'timecard', 'eq', 0);
 
         $this->standard_coursemodule_elements();
 
@@ -142,4 +142,3 @@ class mod_attendees_mod_form extends moodleform_mod {
         }
     }
 }
-

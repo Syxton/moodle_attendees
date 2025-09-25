@@ -68,40 +68,82 @@ if (empty($options['printintro'])) {
     $activityheader['description'] = '';
 }
 
-if ($attendees->multiplelocations && !$location && !$attendees->view) {
-    $attendees->view = "menu"; // Force menu view if multiple locations and no location selected.
-}
-
 $PAGE->set_title($course->shortname.': ' . $attendees->name);
 $PAGE->set_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => $attendees->view, 'location' => $attendees->location, 'tab' => $attendees->tab, 'group' => $attendees->group]);
-
 $PAGE->add_body_class('limitedwidth');
+$PAGE->activityheader->set_attrs($activityheader);
+$PAGE->activityheader->disable();
 
-// These views / actions are restricted to users with viewrosters capability.
-$restrictedview = [
-    "menu",
-    "history",
+// Security Area //
+$canaddinstance = has_capability('mod/attendees:addinstance', $context);
+$canviewrosters = has_capability('mod/attendees:viewrosters', $context);
+$canviewhistory = has_capability('mod/attendees:viewhistory', $context);
+
+// Auto select only location if only one exists and user cannot add instances.
+$locations = attendees_get_locations($cm);
+if (!$canaddinstance) {
+    if (count($locations) == 1) {
+        foreach ($locations as $loc) {
+            error_log("Auto selecting location " . $loc->id);
+            $attendees->location = $loc->id;
+        }
+    }
+}
+
+// If using separate locations and no location selected, force menu view.
+if (empty($attendees->location) && empty($attendees->view)) {
+    $attendees->view = "menu";
+}
+
+$restrictedview = [ // Restricted to users with addinstance capability.
     "overwatch",
     "newlocation",
     "updatelocation",
     "deletelocation",
 ];
-
-if ($attendees->kioskmode || in_array($attendees->view, $restrictedview, true)) {
-    if (!has_capability('mod/attendees:viewrosters', $context)) {
+if (in_array($attendees->view, $restrictedview, true)) {
+    if (!$canaddinstance) {
         // The user doesn't have permission to be here so go back to course page.
         $url = new moodle_url('/course/view.php', ['id' => $course->id]);
-        redirect($url);
-    }
-
-    // Kiosk mode or restricted view so use secure layout.
-    if ($attendees->view === "kiosk") {
-        $PAGE->set_pagelayout('secure'); // Reduced header.
+        redirect($url, get_string('nopermissiontoaccesspage', 'error'));
     }
 }
 
-$PAGE->activityheader->set_attrs($activityheader);
-$PAGE->activityheader->disable();
+$restrictedview = [ // Restricted to users with addinstance capability.
+    "menu",
+    "kiosk",
+];
+if (in_array($attendees->view, $restrictedview, true)) {
+    if (!$canviewrosters) {
+        // The user doesn't have permission to be here so go back to course page.
+        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        redirect($url, get_string('nopermissiontoaccesspage', 'error'));
+    }
+}
+
+// Kiosk mode uses secure layout.
+if ($attendees->kioskmode && $attendees->view === "kiosk") {
+    if (!$canviewrosters) {
+        // The user doesn't have permission to be here so go back to course page.
+        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        redirect($url, get_string('nopermissiontoaccesspage', 'error'));
+    }
+
+    // Kiosk mode or restricted view so use secure layout.
+    $PAGE->set_pagelayout('secure'); // Reduced header.
+}
+
+// Check for valid location data.
+if (!$locations) { // No locations found.
+    if ($attendees->view !== "newlocation") { // Only the menu is allowed.
+        $attendees->view = "menu";
+        if (!$canaddinstance) {
+            // The user doesn't have permission to be here so go back to course page.
+            $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+            redirect($url, get_string('notsetup', 'attendees'));
+        }
+    }
+}
 
 // Auto update and keep alive for overwatch and kiosk mode.
 $auto_update = '
@@ -144,65 +186,92 @@ $auto_update = '
     </script>
 ';
 
-$content = $OUTPUT->header();
-if ($attendees->view === "newlocation") {
-    $location = [
-        'aid' => $attendees->id,
-        'name' => "New Location",
-    ];
-    $DB->insert_record('attendees_locations', $location);
-    $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
-    redirect($url);
-}
-
-if ($attendees->view === "updatelocation" && $location) {
-    $newname = optional_param('newname', false, PARAM_TEXT);
-    if ($newname) {
+echo $OUTPUT->header();
+$content = "";
+switch ($attendees->view) {
+    case "menu":
+        $content .= attendees_menu_ui($cm, $attendees);
+        break;
+    case "kiosk":
+        if ($attendees->kioskmode) {
+            $content .= '
+            <div class="attendees_kioskmode">
+                <p>
+                ' . $attendees->intro . '
+                </p>
+                ' . $auto_update . '
+                ' . attendees_get_ui($cm, $attendees) . '
+            </div>';
+        } else {
+            // Kiosk mode is not enabled so go back to normal view.
+            $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
+            redirect($url);
+        }
+        break;
+    case "history":
+        if (has_capability('mod/attendees:viewhistory', $context)) {
+            $attendees->name = get_string('history', 'attendees');
+            $attendees->intro = get_string('historydesc', 'attendees');
+            $content .= attendees_history_ui($cm, $attendees);
+        } else {
+            // The user doesn't have permission to be here.
+            $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
+            redirect($url);
+        }
+        break;
+    case "overwatch":
+        $content .= $auto_update . attendees_get_ui($cm, $attendees);
+        break;
+    case "newlocation":
         $location = [
-            'id' => $location,
-            'name' => $newname,
+            'aid' => $attendees->id,
+            'name' => "New Location",
         ];
-        $DB->update_record('attendees_locations', $location);
-    }
-
-    $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
-    redirect($url);
-}
-
-if ($attendees->view === "deletelocation" && $location) {
-    $params = [
-        'id' => $location,
-    ];
-    $DB->delete_records('attendees_locations', $params);
-    $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
-    redirect($url);
-}
-
-if ($attendees->view === "history") {
-    if (has_capability('mod/attendees:viewhistory', $context)) {
-        $attendees->name = get_string('history', 'attendees');
-        $attendees->intro = get_string('historydesc', 'attendees');
-        $content .= attendees_history_ui($cm, $attendees);
-    } else {
-        // The user doesn't have permission to be here.
-        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        $DB->insert_record('attendees_locations', $location);
+        $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
         redirect($url);
-    }
-} else if ($attendees->view === "overwatch") {
-    $content .= $auto_update . attendees_get_ui($cm, $attendees);
-} else if ($attendees->kioskmode && $attendees->view === "kiosk") {
-    $content .= '
-        <div class="attendees_kioskmode">
-            <p>
-            ' . $attendees->intro . '
-            </p>
-            ' . $auto_update . '
-            ' . attendees_get_ui($cm, $attendees) . '
-        </div>';
-} else if (($attendees->kioskmode && $attendees->view == "menu") || ($attendees->multiplelocations && !$location)) {
-    $content .= attendees_menu_ui($cm, $attendees);
-} else {
-    $content .= $auto_update . attendees_get_ui($cm, $attendees);
+        break;
+    case "updatelocation":
+        if ($location) {
+            $newname = optional_param('newname', false, PARAM_TEXT);
+            if ($newname) {
+                $location = [
+                    'id' => $location,
+                    'name' => $newname,
+                ];
+                $DB->update_record('attendees_locations', $location);
+            }
+
+            $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
+            redirect($url);
+        } else {
+            // No location specified so go back to menu.
+            $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
+            redirect($url);
+        }
+        break;
+    case "deletelocation":
+        if ($location) {
+            // Cannot delete last location.
+            if (count($locations) == 1) {
+                $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
+                redirect($url, get_string('cannotdeletelastlocation', 'attendees'));
+            }
+
+            // Delete location.
+            $DB->delete_records('attendees_locations', ['id' => $location]);
+            $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
+            redirect($url);
+        } else {
+            // No location specified so go back to menu.
+            $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
+            redirect($url, get_string('locationdatamissing', 'attendees'));
+        }
+        break;
+    default:
+        // Default view is the normal roster view.
+        $content .= $auto_update . attendees_get_ui($cm, $attendees);
+        break;
 }
 
 $formatoptions = (object) [
