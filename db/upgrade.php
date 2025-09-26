@@ -112,5 +112,39 @@ function xmldb_attendees_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2024041005, 'attendees');
     }
 
+    if ($oldversion < 2025092600) {
+        // Look at all current attendees blocks and create locations.
+        // Then attribute the location to activity of that mod.
+
+        if ($mods = $DB->get_records('attendees')) {
+            foreach ($mods as $mod) {
+                $locid = false;
+                // Check if a location already exists.
+                if ($locations = $DB->get_records('attendees_locations', ['aid' => $mod->id])) {
+                    foreach ($locations as $loc) {
+                        $locid = $loc->id;
+                        break;
+                    }
+                } else {
+                    // Create new location.
+                    $location = (object) [
+                        'name' => 'Sign In / Out Location',
+                        'aid' => $mod->id,
+                    ];
+                    $locid = $DB->insert_record('attendees_locations', $location);
+                }
+
+                // Attribute location to all mod activity without a location.
+                if ($locid) {
+                    $sql = "UPDATE {attendees_timecard} SET location = ? WHERE aid = ? AND location = 0";
+                    $DB->execute($sql, [$locid, $mod->id]);
+                }
+            }
+        }
+
+        // Savepoint reached.
+        upgrade_mod_savepoint(true, 2025092600, 'attendees');
+    }
+
     return true;
 }
