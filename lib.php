@@ -275,8 +275,9 @@ function attendees_export_contents($cm) {
 function attendees_view($attendees, $course, $cm, $context) {
 
     // Trigger course_module_viewed event.
-    $params = ['context' => $context,
-               'objectid' => $attendees->id,
+    $params = [
+        'context' => $context,
+        'objectid' => $attendees->id,
     ];
 
     $event = \mod_attendees\event\course_module_viewed::create($params);
@@ -356,7 +357,7 @@ function attendees_get_only_location($cm) {
 function attendees_get_locations($cm) {
     global $DB;
 
-    $locations = $DB->get_records_select('attendees_locations', 'aid', [$cm->id]);
+    $locations = $DB->get_records('attendees_locations', ["aid" => $cm->instance]);
     return $locations;
 }
 

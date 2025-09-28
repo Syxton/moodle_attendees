@@ -24,6 +24,8 @@
 
 namespace mod_attendees\form;
 
+require_once($CFG->libdir . '/formslib.php');
+
 /**
  * Form to search through attendees history.
  *
