@@ -730,34 +730,38 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
     }
 
     if (!$refresh) {
-        if (!$attendees->location) {
+        if ($attendees->timecard && !$attendees->location) {
             // Auto select only location if only one exists and user cannot add instances.
             if (!$attendees->location = attendees_get_only_location($cm)) {
                 $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
-                redirect($url, "No locations found");
+                redirect($url, get_string('locationdatamissing', 'attendees'));
             }
         }
 
-        $location = attendees_get_this_location($attendees->location);
-        $url = new moodle_url('/course/view.php', ['id' => $cm->course]);
-        $content .= '
-        <style>
-            .attendees_hidden_link {
-                color: initial;
-                text-decoration: none;
-            }
-            .attendees_hidden_link:hover {
-                text-decoration: none;
-                color: initial;
-                cursor: default;
-            }
-        </style>
-        <h2>
-            <a href="' . $url . '" class="attendees_hidden_link">
-                <i class="fa-solid fa-location-dot"></i>
-            </a> ' . $location->name . '
-        </h2>
-        ' . $groupselector;
+        if ($attendees->timecard) {
+            $location = attendees_get_this_location($attendees->location);
+            $url = new moodle_url('/course/view.php', ['id' => $cm->course]);
+            $content .= '
+                <style>
+                    .attendees_hidden_link {
+                        color: initial;
+                        text-decoration: none;
+                    }
+                    .attendees_hidden_link:hover {
+                        text-decoration: none;
+                        color: initial;
+                        cursor: default;
+                    }
+                </style>
+                <h2>
+                    <a href="' . $url . '" class="attendees_hidden_link">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </a> ' . $location->name . '
+                </h2>';
+        }
+
+        // Add group selector.
+        $content .= $groupselector;
     }
 
     // Roster.

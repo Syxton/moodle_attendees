@@ -30,7 +30,7 @@ require_once($CFG->libdir . '/completionlib.php');
 $id         = optional_param('id', 0, PARAM_INT); // Module ID.
 $group      = optional_param('group', 0, PARAM_INT);
 $tab        = optional_param('tab', false, PARAM_ALPHANUM);
-$view       = optional_param('view', null, PARAM_ALPHANUM);
+$view       = optional_param('view', "menu", PARAM_ALPHANUM);
 $location   = optional_param('location', 0, PARAM_INT); // Location filter.
 
 // Get the course module.
@@ -112,6 +112,19 @@ if (in_array($attendees->view, $restrictedview, true)) {
     }
 }
 
+// Check for valid location data.
+if ($attendees->timecard && !$locations = attendees_get_locations($cm)) { // No locations found.
+    if ($attendees->view !== "menu" && $attendees->view !== "newlocation") { // Only the menu is allowed.
+        $attendees->view = "menu";
+        if (!$canaddinstance) {
+            // The user doesn't have permission to be here so go back to course page.
+            $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+            redirect($url, get_string('notsetup', 'attendees'));
+        }
+        \core\notification::info(get_string('locationdatamissing', 'attendees'));
+    }
+}
+
 // Kiosk mode uses secure layout.
 if ($attendees->kioskmode && $attendees->view === "kiosk") {
     if (!$canviewrosters) {
@@ -122,18 +135,6 @@ if ($attendees->kioskmode && $attendees->view === "kiosk") {
 
     // Kiosk mode or restricted view so use secure layout.
     $PAGE->set_pagelayout('secure'); // Reduced header.
-}
-
-// Check for valid location data.
-if (!$locations = attendees_get_locations($cm)) { // No locations found.
-    if ($attendees->view !== "newlocation") { // Only the menu is allowed.
-        $attendees->view = "menu";
-        if (!$canaddinstance) {
-            // The user doesn't have permission to be here so go back to course page.
-            $url = new moodle_url('/course/view.php', ['id' => $course->id]);
-            redirect($url, get_string('notsetup', 'attendees'));
-        }
-    }
 }
 
 // Auto update and keep alive for overwatch and kiosk mode.
@@ -195,7 +196,7 @@ switch ($attendees->view) {
         } else {
             // Kiosk mode is not enabled so go back to normal view.
             $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
-            redirect($url);
+            redirect($url, get_string("viewnotavailable", "attendees"));
         }
         break;
     case "history":
@@ -206,7 +207,7 @@ switch ($attendees->view) {
         } else {
             // The user doesn't have permission to be here.
             $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id]);
-            redirect($url);
+            redirect($url, get_string('nopermissiontoaccesspage', 'error'));
         }
         break;
     case "overwatch":
@@ -219,7 +220,7 @@ switch ($attendees->view) {
         ];
         $DB->insert_record('attendees_locations', $location);
         $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
-        redirect($url);
+        redirect($url, get_string('locationadded', 'attendees'));
         break;
     case "updatelocation":
         if ($location) {
@@ -233,11 +234,11 @@ switch ($attendees->view) {
             }
 
             $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
-            redirect($url);
+            redirect($url, get_string('locationupdated', 'attendees'));
         } else {
             // No location specified so go back to menu.
             $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
-            redirect($url);
+            redirect($url, get_string('locationdatamissing', 'attendees'));
         }
         break;
     case "deletelocation":
@@ -251,7 +252,7 @@ switch ($attendees->view) {
             // Delete location.
             $DB->delete_records('attendees_locations', ['id' => $location]);
             $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
-            redirect($url);
+            redirect($url, get_string('locationdeleted', 'attendees'));
         } else {
             // No location specified so go back to menu.
             $url = new moodle_url('/mod/attendees/view.php', ['id' => $cm->id, 'view' => 'menu']);
