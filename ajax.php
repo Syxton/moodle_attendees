@@ -26,29 +26,33 @@ require('../../config.php');
 require_once($CFG->dirroot.'/mod/attendees/lib.php');
 require_once($CFG->libdir.'/completionlib.php');
 
+// Standard passed variables.
 $id      = optional_param('id', 0, PARAM_INT); // Course Module ID.
 $tab     = optional_param('tab', null, PARAM_ALPHANUM);
 $group   = optional_param('group', null, PARAM_INT);
 $view       = optional_param('view', null, PARAM_ALPHANUM);
 $location   = optional_param('location', 0, PARAM_INT); // Location filter.
 
+// Get the course module.
 if (!$cm = get_coursemodule_from_id('attendees', $id)) {
     throw new \moodle_exception('invalidcoursemodule');
 }
 
-$attendees = $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
+// Get the course.
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 
+// Check if the user can view the module.
+require_course_login($course, true, $cm);
+$context = context_module::instance($cm->id);
+require_capability('mod/attendees:view', $context);
+
+// Get the attendees record.
+$attendees = $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
 $attendees->view = $view;
 $attendees->location = $location;
 $attendees->group = $group;
 $attendees->tab = !$tab ? $attendees->defaultview : $tab;
-$attendees->tab = $attendees->lockview ? $attendees->defaultview : $attendees->tab;
-
-require_course_login($course, true, $cm);
-$context = context_module::instance($cm->id);
-
-require_capability('mod/attendees:view', $context);
+$attendees->tab = $attendees->lockview && !$attendees->view == "overwatch" ? $attendees->defaultview : $attendees->tab;
 
 $json = json_encode([]);
 

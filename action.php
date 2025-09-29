@@ -26,45 +26,51 @@ require('../../config.php');
 require_once($CFG->dirroot.'/mod/attendees/lib.php');
 require_once($CFG->libdir.'/completionlib.php');
 
+// Standard passed variables.
 $id         = optional_param('id', 0, PARAM_INT); // Course Module ID.
-$userid     = optional_param('userid', 0, PARAM_INT); // User ID ID.
+$group      = optional_param('group', 0, PARAM_INT);
 $tab        = optional_param('tab', null, PARAM_ALPHANUM);
 $view       = optional_param('view', null, PARAM_ALPHANUM);
-$group      = optional_param('group', 0, PARAM_INT);
-$code       = optional_param('code', null, PARAM_RAW);
 $location   = optional_param('location', 0, PARAM_INT); // Location filter.
-$message = "";
+
+// Optional passed variables.
+$userid     = optional_param('userid', 0, PARAM_INT); // User ID.
+$code       = optional_param('code', null, PARAM_RAW);
 
 if (!$cm = get_coursemodule_from_id('attendees', $id)) {
     throw new \moodle_exception('invalidcoursemodule');
 }
 
-$attendees = $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
+// Get the course.
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 
+// Check if the user can view the module.
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
-
 require_capability('mod/attendees:view', $context);
 
+// Get the attendees record.
+$attendees = $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
 $attendees->view = $view;
 $attendees->location = $location;
 $attendees->group = $group;
 $attendees->tab = !$tab ? $attendees->defaultview : $tab;
-$attendees->tab = $attendees->lockview ? $attendees->defaultview : $attendees->tab;
+$attendees->tab = $attendees->lockview && !$attendees->view == "overwatch" ? $attendees->defaultview : $attendees->tab;
 
 // Check if attendees has sign in/out enabled.
+$message = "";
 if ($attendees->timecard) {
-    if ($userid) { // Attempt to sign in / out someone else with userid.
+    // Are we signing in a specific user?
+    // If not, we are signing in or out ourselves or a person by code lookup.
+    if ($userid) {
         require_capability('mod/attendees:signinoutothers', $context);
         $message = attendees_signinout($attendees, $userid);
-    } else if (has_capability('mod/attendees:signinout', $context)) { // Sign yourself in or out.
-        if ($attendees->kioskmode && $code !== null) { // Sign in/out by code in kiosk mode.
-            $return = attendees_lookup($attendees, $code);
+    } else if (has_capability('mod/attendees:signinout', $context)) {
+        // Sign in/out by code in kiosk mode.
+        if ($attendees->kioskmode && $code !== null) {
+            $message = attendees_lookup($attendees, $code);
             if (!empty($return) && is_numeric($return)) {
-                $message = attendees_signinout($attendees, $return);
-            } else {
-                $message = $return;
+                $message = attendees_signinout($attendees, $message);
             }
         } else { // Attempt to sign yourself in.
             $message = attendees_signinout($attendees, $USER->id);
@@ -76,4 +82,11 @@ if ($attendees->timecard) {
 attendees_view($attendees, $course, $cm, $context);
 
 $tab = !$tab ? $attendees->defaultview : $tab;
-redirect($CFG->wwwroot ."/mod/attendees/view.php?id=$id&tab=$tab&location=$location&view=$view", $message);
+$params = [
+    'id' => $id,
+    'tab' => $tab,
+    'view' => $view,
+    'location' => $location
+];
+$url = new moodle_url('/mod/attendees/view.php', $params);
+redirect($url, $message);

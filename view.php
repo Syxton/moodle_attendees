@@ -26,37 +26,33 @@ require_once('../../config.php');
 require_once($CFG->dirroot . '/mod/attendees/lib.php');
 require_once($CFG->libdir . '/completionlib.php');
 
-$id         = optional_param('id', 0, PARAM_INT);
+// Standard passed variables.
+$id         = optional_param('id', 0, PARAM_INT); // Module ID.
 $group      = optional_param('group', 0, PARAM_INT);
-$p          = optional_param('p', 0, PARAM_INT);
 $tab        = optional_param('tab', false, PARAM_ALPHANUM);
 $view       = optional_param('view', null, PARAM_ALPHANUM);
 $location   = optional_param('location', 0, PARAM_INT); // Location filter.
 
-if ($p) {
-    if (!$attendees = $DB->get_record('attendees', ['id' => $p])) {
-        throw new \moodle_exception('invalidaccessparameter');
-    }
-    $cm = get_coursemodule_from_instance('attendees', $attendees->id, $attendees->course, false, MUST_EXIST);
-} else {
-    if (!$cm = get_coursemodule_from_id('attendees', $id)) {
-        throw new \moodle_exception('invalidcoursemodule');
-    }
-    $attendees = $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
+// Get the course module.
+if (!$cm = get_coursemodule_from_id('attendees', $id)) {
+    throw new \moodle_exception('invalidcoursemodule');
 }
 
-$attendees->view = $view;
-$attendees->location = $location;
-$attendees->group = $group;
-
-$attendees->tab = !$tab ? $attendees->defaultview : $tab;
-$attendees->tab = $attendees->lockview && !$attendees->view == "overwatch" ? $attendees->defaultview : $attendees->tab;
-
+// Get the course.
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 
+// Check if the user can view the module.
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/attendees:view', $context);
+
+// Get the attendees record.
+$attendees = $DB->get_record('attendees', ['id' => $cm->instance], '*', MUST_EXIST);
+$attendees->view = $view;
+$attendees->location = $location;
+$attendees->group = $group;
+$attendees->tab = !$tab ? $attendees->defaultview : $tab;
+$attendees->tab = $attendees->lockview && !$attendees->view == "overwatch" ? $attendees->defaultview : $attendees->tab;
 
 // Completion and trigger events.
 attendees_view($attendees, $course, $cm, $context);

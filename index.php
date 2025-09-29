@@ -48,7 +48,8 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading($strpage);
 
 if (!$pages = get_all_instances_in_course('attendees', $course)) {
-    notice(get_string('thereareno', 'moodle', $strpage), "$CFG->wwwroot/course/view.php?id=$course->id");
+    $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+    notice(get_string('thereareno', 'moodle', $strpage), $url);
     exit;
 }
 
@@ -85,9 +86,12 @@ foreach ($pages as $attendees) {
 
     $class = $attendees->visible ? '' : 'class="dimmed"'; // Hidden modules are dimmed.
 
+    $params = ['id' => $cm->id, 'view' => "menu"];
+    $url = new moodle_url('/mod/attendees/view.php', $params);
+
     $table->data[] = [
         $printsection,
-        "<a $class href=\"view.php?id=$cm->id&view=menu\">" .
+        "<a $class href=\"$url\">" .
             format_string($attendees->name) .
         "</a>",
         format_module_intro('attendees', $attendees, $cm->id),

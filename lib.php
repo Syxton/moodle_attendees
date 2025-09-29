@@ -301,7 +301,10 @@ function attendees_view($attendees, $course, $cm, $context) {
  */
 function attendees_overwatch_ui($cm, $attendees) {
     // Default overwatch button action.
-    $javascript = "window.location.href = 'view.php?id=$cm->id&view=overwatch';";
+    $params = ['id' => $cm->id, 'view' => "overwatch"];
+    $url = new moodle_url('/mod/attendees/view.php', $params);
+
+    $javascript = "window.location.href = '$url';";
 
     // If more than one location exists, require a location to be selected.
     if (empty($attendees->location)) {
@@ -310,7 +313,7 @@ function attendees_overwatch_ui($cm, $attendees) {
             $javascript = "
             let locationvalue = jQuery('input.attendees_location:checked').val();
             if (locationvalue) {
-                window.location.href = 'view.php?id=$cm->id&view=overwatch&location=' + locationvalue;
+                window.location.href = '$url&location=' + locationvalue;
             } else if (locationvalue === undefined || locationvalue === 0) {
                 alert('You must select a location');
             }";
@@ -418,36 +421,20 @@ function attendees_location_manager_ui($cm, $attendees) {
     $locationlist = '';
     $locations = attendees_get_locations($cm);
     if ($locations) {
-        $locationlist = '<div class="locationlist">';
+        $locationlistitems = '';
         // Build groupid array.
         foreach ($locations as $l) {
-            $locationlist .= '<div class="locationlist_item">';
-            $locationlist .= '
-                    <div>
-                        <input
-                            type="radio"
-                            name="attendees_location"
-                            class="attendees_location"
-                            value="' . $l->id . '"
-                        />
-                        <input
-                            type="text"
-                            id="locationnameedit_' . $l->id . '"
-                            value="' . $l->name . '"
-                            style="display: none;"
-                        />
-                        <span
-                            id="locationname_' . $l->id . '"
-                            style="padding: 4px;">
-                            ' . $l->name . '
-                        </span>
-                    </div>';
+            $locationbuttons = "";
             if ($canaddinstance) {
+                $params = ['id' => $cm->id, 'location' => $l->id];
+                $url = new moodle_url('/mod/attendees/view.php', $params);
+
                 $editing = '#locationsave_' . $l->id . ', #locationcancel_' . $l->id . ', #locationnameedit_' . $l->id;
                 $notediting = '#locationname_' . $l->id . ', #locationrename_' . $l->id;
-                $url = 'window.location.href = \'view.php?id=' . $cm->id . '&view=updatelocation&location=' . $l->id;
-                $url .= '&newname=\' + encodeURIComponent(jQuery(\'#locationnameedit_' . $l->id . '\').val()); return false;';
-                $locationlist .= '
+                $javascript = 'window.location.href = \'' . $url . '&view=updatelocation';
+                $javascript .= '&newname=\' + encodeURIComponent(jQuery(\'#locationnameedit_' . $l->id . '\').val()); return false;';
+
+                $locationbuttons = '
                 <div>
                     <a  title="Rename" id="locationrename_' . $l->id . '"
                         href="javascript: void(0);"
@@ -455,7 +442,10 @@ function attendees_location_manager_ui($cm, $attendees) {
                         style="color: #297e14ff;"
                         onclick="
                             jQuery(\'' . $notediting . '\').hide();
-                            jQuery(\'' . $editing . '\').show();"
+                            jQuery(\'' . $editing . '\').show();
+                            jQuery(\'#locationnameedit_' . $l->id . '\').on(\'click\', function () {
+                                jQuery(this).select();
+                            }).trigger(\'click\');"
                     >
                         <i class="fa-solid fa-pen-to-square"></i>
                     </a>
@@ -464,7 +454,7 @@ function attendees_location_manager_ui($cm, $attendees) {
                         href="javascript: void(0);"
                         class="btn"
                         style="color: #5d3addff;display: none;"
-                        onclick="' . $url . '"
+                        onclick="' . $javascript . '"
                     >
                         <i class="fa-solid fa-floppy-disk"></i>
                     </a>
@@ -485,26 +475,58 @@ function attendees_location_manager_ui($cm, $attendees) {
                         style="color: #d33;"
                         onclick="
                             if (confirm(\'Are you sure you want to delete this location\')) {
-                                window.location.href = \'view.php?id=' . $cm->id . '&view=deletelocation&location=' . $l->id . '\';
+                                window.location.href = \'' . $url . '&view=deletelocation\';
                             }"
                     >
                         <i class="fa-solid fa-trash"></i>
                     </a>
                 </div>';
             }
-            $locationlist .= '</div>';
+
+            $locationlistitems .= '
+                <div class="locationlist_item">
+                    <div>
+                        <input
+                            type="radio"
+                            name="attendees_location"
+                            class="attendees_location"
+                            value="' . $l->id . '"
+                        />
+                        <input
+                            type="text"
+                            id="locationnameedit_' . $l->id . '"
+                            value="' . $l->name . '"
+                            style="display: none;"
+                        />
+                        <span
+                            id="locationname_' . $l->id . '"
+                            style="padding: 4px;">
+                            ' . $l->name . '
+                        </span>
+                    </div>
+                    ' . $locationbuttons . '
+                </div>
+            ';
         }
-        $locationlist .= '</div>';
+
+        $locationlist = '
+            <div class="locationlist">
+                ' . $locationlistitems . '
+            </div>';
     }
 
     // Add a new location button.
     if ($canaddinstance) {
+        $params = ['id' => $cm->id, 'view' => "newlocation"];
+        $url = new moodle_url('/mod/attendees/view.php', $params);
+
         $locationlist .= '
-        <button
-            type="button"
-            onclick="window.location.href = \'view.php?id=' . $cm->id . '&view=newlocation\'">
-            Add New Location
-        </button>';
+            <button
+                type="button"
+                onclick="window.location.href = \'' . $url . '\'">
+                <i class="fa-solid fa-add"></i>
+                Add New Location
+            </button>';
     }
 
     $content = '
@@ -526,8 +548,11 @@ function attendees_location_manager_ui($cm, $attendees) {
  * @return string            the kiosk mode user interface as HTML
  */
 function attendees_start_kiosk_ui($cm, $attendees) {
+    $params = ['id' => $cm->id, 'view' => "kiosk"];
+    $url = new moodle_url('/mod/attendees/view.php', $params);
+
     // Default overwatch button action.
-    $javascript = "window.location.href = 'view.php?id=$cm->id&view=kiosk';";
+    $javascript = "window.location.href = '$url';";
 
     // If more than one location exists, require a location to be selected.
     if (empty($attendees->location)) {
@@ -536,7 +561,7 @@ function attendees_start_kiosk_ui($cm, $attendees) {
             $javascript = "
             let locationvalue = jQuery('input.attendees_location:checked').val();
             if (locationvalue) {
-                window.location.href = 'view.php?id=$cm->id&view=kiosk&location=' + locationvalue;
+                window.location.href = '$url&location=' + locationvalue;
             } else if (locationvalue === undefined || locationvalue === 0) {
                 alert('You must select a location');
             }";
@@ -655,12 +680,15 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
             && !$refresh
             && (!$attendees->kioskmode
             || $attendees->view === "overwatch")) {
-            $url = new moodle_url('/mod/attendees/view.php', [
+
+            $params = [
                 'id' => $cm->id,
                 'view' => $attendees->view,
                 'location' => $attendees->location,
                 'tab' => $tab,
-            ]);
+            ];
+            $url = new moodle_url('/mod/attendees/view.php', $params);
+
             $groupselector = groups_print_activity_menu($cm, $url, true);
         }
     }
@@ -691,9 +719,12 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
         && !$refresh
         && $attendees->timecard
         && has_capability('mod/attendees:viewhistory', $context)) {
+
+        $params = ['id' => $cm->id, 'view' => 'history'];
+        $url = new moodle_url('/mod/attendees/view.php', $params);
         $content .= '
         <div class="attendees_history">
-            <a href="view.php?id=' . $cm->id . '&view=history">
+            <a href="' . $url . '">
             ' . get_string('history', 'mod_attendees') . '
             </a>
         </div>';
@@ -759,11 +790,14 @@ function attendees_roster_tabs($cm, $attendees) {
     $all = $onlyin = $onlyout = "";
     $tab = $attendees->tab;
     $$tab = 'active active_tree_node';
-    $i = $cm->id;
-    $l = $attendees->location;
-    $v = $attendees->view;
-    $g = $attendees->group;
-    $url = "$CFG->wwwroot/mod/attendees/view.php?id=$i&location=$l&view=$v&group=$g&tab=";
+    $params = [
+        'id' => $cm->id,
+        'view' => $attendees->view,
+        'location' => $attendees->location,
+        'group' => $attendees->group,
+    ];
+    $url = new moodle_url('/mod/attendees/view.php', $params);
+    $url .= '&tab=';
 
     return '
     <div class="attendees_tabs secondary-navigation d-print-none">
@@ -800,7 +834,15 @@ function attendees_roster_tabs($cm, $attendees) {
 function attendees_sign_inout_button($cm, $tab, $attendees) {
     global $CFG, $USER, $DB, $OUTPUT;
     $user = $DB->get_record('user', ['id' => $USER->id], '*', MUST_EXIST);
-    $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab&location=$attendees->location&view=$attendees->view";
+
+    $params = [
+        'id' => $cm->id,
+        'tab' => $tab,
+        'location' => $attendees->location,
+        'view' => $attendees->view,
+    ];
+    $url = new moodle_url('/mod/attendees/action.php', $params);
+
     if (attendees_is_active($user, $attendees)) {
         $text = get_string("signout", "attendees");
         $inorout = $OUTPUT->pix_icon('a/logout', $text , 'moodle') . " $text";
@@ -1028,11 +1070,14 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
     $context = context_module::instance($cm->id);
     $signinoutothers = has_capability('mod/attendees:signinoutothers', $context);
 
-    $tab = $attendees->tab;
-    $location = $attendees->location;
-    $view = $attendees->view;
+    $params = [
+        'id' => $cm->id,
+        'tab' => $attendees->tab,
+        'location' => $attendees->location,
+        'view' => $attendees->view,
+    ];
+    $url = new moodle_url('/mod/attendees/action.php', $params);
 
-    $url = "$CFG->wwwroot/mod/attendees/action.php?id=$cm->id&tab=$tab&location=$location&view=$view";
     $output = "";
 
     // Add search mode for kiosk with timecards.
@@ -1047,15 +1092,15 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
                     <input  type="hidden"
                             name="tab"
                             id="tab"
-                            value="' . $tab . '" />
+                            value="' . $attendees->tab . '" />
                     <input  type="hidden"
                             name="location"
                             id="location"
-                            value="' . $location . '" />
+                            value="' . $attendees->location . '" />
                     <input  type="hidden"
                             name="view"
                             id="view"
-                            value="' . $view . '" />
+                            value="' . $attendees->view . '" />
                     <label style="font-weight: bold;">
                     ' . get_string("usersearch", "attendees") . '
                     </label>
@@ -1081,9 +1126,6 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
             </div>';
     }
 
-    $alt = ' alt="' . get_string("signinout", "attendees") . '"';
-    $icons = $OUTPUT->pix_icon('a/logout', get_string("signout", "attendees"), 'moodle') .
-             $OUTPUT->pix_icon('withoutkey', get_string("signin", "attendees"), 'enrol_self');
     $options = [
         'size' => '100', // Size of image.
         'link' => !$attendees->kioskmode, // Make image clickable.
@@ -1093,39 +1135,47 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
     ];
 
     // Reduce users array if possible.
-    if ($tab !== "all") {
-        $users = filteroutusers($attendees, $users, $tab);
+    if ($attendees->tab !== "all") {
+        $users = filteroutusers($attendees, $users, $attendees->tab);
     }
 
-    $output .= '<div class="attendees_refreshable">';
+    $useroutput = "";
     foreach ($users as $user) {
         $status = "out";
         if ($attendees->timecard) {
             $status = attendees_current_status($cm, $user, $attendees);
         }
-        $output .= '<div class="attendees_userblock attendees_status_'. $status . '">';
 
         // Only show icons if timecard is enabled and has permissions.
+        $icons = "";
         if (!empty($attendees->timecard)
             && !empty($signinoutothers)
             && (empty($attendees->kioskmode)
                 || (!empty($attendees->kioskmode) && !empty($attendees->kioskbuttons)
                 || $attendees->view === "overwatch")
             )) {
-            $href = ' href="' . $url . "&userid=$user->id" . '"';
-            $output .= '
-                <a class="attendees_otherinout_button" ' . $href . $alt . ' >
-                ' . $icons . '
+
+            $icons = '
+                <a  class="attendees_otherinout_button"
+                    href="' . $url . "&userid=$user->id" . '"
+                    alt="' . get_string("signinout", "attendees") . '">
+                    ' . $OUTPUT->pix_icon('a/logout', get_string("signout", "attendees"), 'moodle') . '
+                    ' . $OUTPUT->pix_icon('withoutkey', get_string("signin", "attendees"), 'enrol_self') . '
                 </a>';
         }
 
-        $output .= $OUTPUT->user_picture($user, $options);
-        $output .= '<div class="attendees_name"> ' . $user->firstname . ' ' . $user->lastname . '</div>';
-        $output .= attendees_list_user_groups($cm, $attendees, $user->id);
-        $output .= '</div>';
+        $useroutput .= '
+            <div class="attendees_userblock attendees_status_'. $status . '">
+                ' . $icons . '
+                ' . $OUTPUT->user_picture($user, $options) . '
+                <div class="attendees_name">
+                    ' . $user->firstname . ' ' . $user->lastname . '
+                </div>
+                ' . attendees_list_user_groups($cm, $attendees, $user->id) . '
+            </div>';
     }
-    $output .= '</div>';
-    return $output;
+
+    return '<div class="attendees_refreshable">' . $useroutput . '</div>';
 }
 
 
@@ -1582,3 +1632,4 @@ function get_duration($seconds) {
         return gmdate('H\h i\m s\s', $seconds);
     }
 }
+
