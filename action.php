@@ -86,7 +86,7 @@ $params = [
     'id' => $id,
     'tab' => $tab,
     'view' => $view,
-    'location' => $location
+    'location' => $location,
 ];
 $url = new moodle_url('/mod/attendees/view.php', $params);
 redirect($url, $message);

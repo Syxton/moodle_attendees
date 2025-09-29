@@ -429,10 +429,14 @@ function attendees_location_manager_ui($cm, $attendees) {
                 $params = ['id' => $cm->id, 'location' => $l->id];
                 $url = new moodle_url('/mod/attendees/view.php', $params);
 
+                // Selectors.
                 $editing = '#locationsave_' . $l->id . ', #locationcancel_' . $l->id . ', #locationnameedit_' . $l->id;
                 $notediting = '#locationname_' . $l->id . ', #locationrename_' . $l->id;
-                $javascript = 'window.location.href = \'' . $url . '&view=updatelocation';
-                $javascript .= '&newname=\' + encodeURIComponent(jQuery(\'#locationnameedit_' . $l->id . '\').val()); return false;';
+
+                $javascript = '
+                window.location.href = \'' . $url . '&view=updatelocation&newname=\'' .
+                ' + encodeURIComponent(jQuery(\'#locationnameedit_' . $l->id . '\').val());
+                return false;';
 
                 $locationbuttons = '
                 <div>
