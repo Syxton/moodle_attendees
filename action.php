@@ -68,9 +68,11 @@ if ($attendees->timecard) {
     } else if (has_capability('mod/attendees:signinout', $context)) {
         // Sign in/out by code in kiosk mode.
         if ($attendees->kioskmode && $code !== null) {
-            $message = attendees_lookup($attendees, $code);
+            $return = attendees_lookup($attendees, $code);
             if (!empty($return) && is_numeric($return)) {
-                $message = attendees_signinout($attendees, $message);
+                $message = attendees_signinout($attendees, $return);
+            } else {
+                $message = $return;
             }
         } else { // Attempt to sign yourself in.
             $message = attendees_signinout($attendees, $USER->id);

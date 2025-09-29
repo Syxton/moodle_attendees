@@ -371,8 +371,6 @@ function attendees_get_locations($cm) {
  * @return int|false The first unique location id if found, false otherwise.
  */
 function attendees_get_location($aid) {
-    global $DB;
-
     $cm = get_coursemodule_from_instance('attendees', $aid);
     if (!$locations = attendees_get_locations($cm)) {
         return false;
@@ -409,12 +407,9 @@ function attendees_get_this_location($locid) {
  * and buttons for renaming, deleting, and adding new locations.
  *
  * @param stdClass $cm The course module record.
- * @param stdClass $attendees The attendees record.
  * @return string The HTML for the location manager UI.
  */
-function attendees_location_manager_ui($cm, $attendees) {
-    global $DB;
-
+function attendees_location_manager_ui($cm) {
     $context = context_module::instance($cm->id);
     $canaddinstance = has_capability('mod/attendees:addinstance', $context);
 
@@ -629,7 +624,7 @@ function attendees_menu_ui($cm, $attendees) {
     }
 
     if ($canviewrosters) {
-        $content .= attendees_location_manager_ui($cm, $attendees);
+        $content .= attendees_location_manager_ui($cm);
     }
 
     $content .= '</div>';
@@ -790,7 +785,6 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
  * @return string               user interface html text
  */
 function attendees_roster_tabs($cm, $attendees) {
-    global $CFG;
     $all = $onlyin = $onlyout = "";
     $tab = $attendees->tab;
     $$tab = 'active active_tree_node';
@@ -836,7 +830,7 @@ function attendees_roster_tabs($cm, $attendees) {
  * @return string               sign in/out button html text
  */
 function attendees_sign_inout_button($cm, $tab, $attendees) {
-    global $CFG, $USER, $DB, $OUTPUT;
+    global $USER, $DB, $OUTPUT;
     $user = $DB->get_record('user', ['id' => $USER->id], '*', MUST_EXIST);
 
     $params = [
@@ -906,12 +900,11 @@ function attendees_signinout($attendees, $userid) {
 /**
  * Get the current status of a user (in or out).
  *
- * @param stdClass $cm       course module data
  * @param stdClass $user     user data
  * @param stdClass $attendees attendees object
  * @return string            'in' or 'out'
  */
-function attendees_current_status($cm, $user, $attendees) {
+function attendees_current_status($user, $attendees) {
     return attendees_is_active($user, $attendees) ? "in" : "out";
 }
 
@@ -1068,7 +1061,7 @@ function attendees_lookup($attendees, $code) {
  * @return string               user interface html text
  */
 function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
-    global $CFG, $OUTPUT, $DB;
+    global $CFG, $OUTPUT;
     require_once($CFG->libdir . '/filelib.php');
 
     $context = context_module::instance($cm->id);
@@ -1082,11 +1075,11 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
     ];
     $url = new moodle_url('/mod/attendees/action.php', $params);
 
-    $output = "";
+    $kioskform = "";
 
     // Add search mode for kiosk with timecards.
     if ($attendees->kioskmode && $attendees->timecard && !$refresh) {
-        $output .= '
+        $kioskform .= '
             <div class="attendees_usersearch">
                 <form method="get" action="' . $url . '" style="padding: 10px;width: 450px;margin: auto;">
                     <input  type="hidden"
@@ -1147,7 +1140,7 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
     foreach ($users as $user) {
         $status = "out";
         if ($attendees->timecard) {
-            $status = attendees_current_status($cm, $user, $attendees);
+            $status = attendees_current_status($user, $attendees);
         }
 
         // Only show icons if timecard is enabled and has permissions.
@@ -1179,7 +1172,7 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
             </div>';
     }
 
-    return '<div class="attendees_refreshable">' . $useroutput . '</div>';
+    return $kioskform . '<div class="attendees_refreshable">' . $useroutput . '</div>';
 }
 
 
