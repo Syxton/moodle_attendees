@@ -31,7 +31,6 @@ require_once($CFG->dirroot . '/mod/attendees/backup/moodle2/backup_attendees_ste
  * Provides the steps to perform one complete backup of the Attendees instance
  */
 class backup_attendees_activity_task extends backup_activity_task {
-
     /**
      * No specific settings for this activity
      */

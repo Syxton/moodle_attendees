@@ -41,7 +41,7 @@ $strname   = get_string('name');
 $strintro  = get_string('moduleintro');
 
 $PAGE->set_url('/mod/attendees/index.php', ['id' => $course->id]);
-$PAGE->set_title($course->shortname . ': '. $strpage);
+$PAGE->set_title($course->shortname . ': ' . $strpage);
 $PAGE->set_heading($course->fullname);
 $PAGE->navbar->add($strpage);
 echo $OUTPUT->header();
@@ -59,7 +59,7 @@ $table = new html_table();
 $table->attributes['class'] = 'generaltable mod_index';
 
 if ($usesections) {
-    $strsectionname = get_string('sectionname', 'format_'.$course->format);
+    $strsectionname = get_string('sectionname', 'format_' . $course->format);
     $table->head  = [$strsectionname, $strname, $strintro];
     $table->align = ['center', 'left', 'left'];
 } else {

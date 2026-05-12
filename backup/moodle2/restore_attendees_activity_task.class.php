@@ -30,7 +30,6 @@ require_once($CFG->dirroot . '/mod/attendees/backup/moodle2/restore_attendees_st
  * attendees restore task that provides all the settings and steps to perform one
  */
 class restore_attendees_activity_task extends restore_activity_task {
-
     /**
      * Define (add) particular settings this activity can have
      */

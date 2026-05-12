@@ -23,8 +23,8 @@
  */
 
 require('../../config.php');
-require_once($CFG->dirroot.'/mod/attendees/lib.php');
-require_once($CFG->libdir.'/completionlib.php');
+require_once($CFG->dirroot . '/mod/attendees/lib.php');
+require_once($CFG->libdir . '/completionlib.php');
 
 // Standard passed variables.
 $id         = optional_param('id', 0, PARAM_INT); // Course Module ID.

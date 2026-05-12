@@ -94,8 +94,8 @@ function xmldb_attendees_upgrade($oldversion) {
     if ($oldversion < 2024041005) {
         // Rename description field to intro, and define field introformat to be added to scheduler.
         $table = new xmldb_table('attendees');
-        $locationsfield = new xmldb_field('
-            multiplelocations',
+        $locationsfield = new xmldb_field(
+            'multiplelocations',
             XMLDB_TYPE_INTEGER,
             '1',
             null,

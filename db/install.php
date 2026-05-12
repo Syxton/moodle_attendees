@@ -31,5 +31,4 @@
  * Extra install actions.
  */
 function xmldb_attendees_install() {
-
 }

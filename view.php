@@ -64,7 +64,7 @@ if (empty($options['printintro'])) {
     $activityheader['description'] = '';
 }
 
-$PAGE->set_title($course->shortname.': ' . $attendees->name);
+$PAGE->set_title($course->shortname . ': ' . $attendees->name);
 $PAGE->set_url('/mod/attendees/view.php', [
     'id' => $cm->id,
     'view' => $attendees->view,

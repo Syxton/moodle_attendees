@@ -27,22 +27,70 @@ defined('MOODLE_INTERNAL') || die;
 if ($ADMIN->fulltree) {
     require_once("$CFG->libdir/resourcelib.php");
 
-    $settings->add(new admin_setting_configcheckbox('attendees/timecard',
-        get_string('timecard', 'attendees'), get_string('timecardexplain', 'attendees'), 0));
-    $settings->add(new admin_setting_configcheckbox('attendees/autosignout',
-        get_string('autosignout', 'attendees'), get_string('autosignoutexplain', 'attendees'), 1));
-    $settings->add(new admin_setting_configcheckbox('attendees/showroster',
-        get_string('showroster', 'attendees'), get_string('showrosterexplain', 'attendees'), 0));
-    $settings->add(new admin_setting_configcheckbox('attendees/showgroups',
-        get_string('showgroups', 'attendees'), get_string('showgroupsexplain', 'attendees'), 1));
-    $settings->add(new admin_setting_configcheckbox('attendees/lockview',
-        get_string('lockview', 'attendees'), get_string('lockviewexplain', 'attendees'), 0));
-    $settings->add(new admin_setting_configcheckbox('attendees/kioskmode',
-        get_string('kioskmode', 'attendees'), get_string('kioskmodeexplain', 'attendees'), 0));
-    $settings->add(new admin_setting_configcheckbox('attendees/separatelocations',
-        get_string('separatelocations', 'attendees'), get_string('separatelocationsexplain', 'attendees'), 0));
-    $settings->add(new admin_setting_configcheckbox('attendees/kioskbuttons',
-        get_string('kioskbuttons', 'attendees'), get_string('kioskbuttonsexplain', 'attendees'), 0));
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'attendees/timecard',
+            get_string('timecard', 'attendees'),
+            get_string('timecardexplain', 'attendees'),
+            0
+        )
+    );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'attendees/autosignout',
+            get_string('autosignout', 'attendees'),
+            get_string('autosignoutexplain', 'attendees'),
+            1
+        )
+    );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'attendees/showroster',
+            get_string('showroster', 'attendees'),
+            get_string('showrosterexplain', 'attendees'),
+            0
+        )
+    );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'attendees/showgroups',
+            get_string('showgroups', 'attendees'),
+            get_string('showgroupsexplain', 'attendees'),
+            1
+        )
+    );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'attendees/lockview',
+            get_string('lockview', 'attendees'),
+            get_string('lockviewexplain', 'attendees'),
+            0
+        )
+    );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'attendees/kioskmode',
+            get_string('kioskmode', 'attendees'),
+            get_string('kioskmodeexplain', 'attendees'),
+            0
+        )
+    );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'attendees/separatelocations',
+            get_string('separatelocations', 'attendees'),
+            get_string('separatelocationsexplain', 'attendees'),
+            0
+        )
+    );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'attendees/kioskbuttons',
+            get_string('kioskbuttons', 'attendees'),
+            get_string('kioskbuttonsexplain', 'attendees'),
+            0
+        )
+    );
     $searchfields = [
         'idnumber' => get_string("idnumber"),
         'email' => get_string("email"),
@@ -50,6 +98,13 @@ if ($ADMIN->fulltree) {
         'phone1' => get_string("phone1"),
         'phone2' => get_string("phone2"),
     ];
-    $settings->add(new admin_setting_configmultiselect('attendees/searchfields', get_string('searchfields', 'attendees'),
-        get_string('searchfieldsexplain', 'attendees'), array_keys($searchfields), $searchfields));
+    $settings->add(
+        new admin_setting_configmultiselect(
+            'attendees/searchfields',
+            get_string('searchfields', 'attendees'),
+            get_string('searchfieldsexplain', 'attendees'),
+            array_keys($searchfields),
+            $searchfields
+        )
+    );
 }

@@ -41,7 +41,7 @@ function attendees_supports($feature) {
         define('MOD_PURPOSE_COLLABORATION', 'collaboration');
     }
 
-    switch($feature) {
+    switch ($feature) {
         case FEATURE_MOD_ARCHETYPE:
             return MOD_ARCHETYPE_OTHER;
         case FEATURE_GROUPS:
@@ -675,11 +675,12 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
         $allgroups = groups_get_all_groups($cm->course, 0, $cm->groupingid);
 
         // Only show selector if there is more than 1 group to show.
-        if (count($allgroups) > 1
+        if (
+            count($allgroups) > 1
             && !$refresh
             && (!$attendees->kioskmode
-            || $attendees->view === "overwatch")) {
-
+            || $attendees->view === "overwatch")
+        ) {
             $params = [
                 'id' => $cm->id,
                 'view' => $attendees->view,
@@ -704,21 +705,24 @@ function attendees_get_ui($cm, $attendees, $refresh = false) {
     // And the user is a student.
     // And the activity is NOT in kiosk mode (shouldn't get this far).
     // And it isn't an ajax roster refresh.
-    if (!$viewrosters
+    if (
+        !$viewrosters
         && !$attendees->kioskmode
         && $attendees->timecard
         && !$refresh
         && is_enrolled($context, $USER, 'mod/attendees:signinout', true)
-        && in_array($USER->id, array_column($users, 'id'))) {
+        && in_array($USER->id, array_column($users, 'id'))
+    ) {
         $content .= attendees_sign_inout_button($cm, $tab, $attendees);
     }
 
     // Data History link.
-    if ($attendees->view !== "kiosk"
+    if (
+        $attendees->view !== "kiosk"
         && !$refresh
         && $attendees->timecard
-        && has_capability('mod/attendees:viewhistory', $context)) {
-
+        && has_capability('mod/attendees:viewhistory', $context)
+    ) {
         $params = ['id' => $cm->id, 'view' => 'history'];
         $url = new moodle_url('/mod/attendees/view.php', $params);
         $content .= '
@@ -847,10 +851,10 @@ function attendees_sign_inout_button($cm, $tab, $attendees) {
 
     if (attendees_is_active($user, $attendees)) {
         $text = get_string("signout", "attendees");
-        $inorout = $OUTPUT->pix_icon('a/logout', $text , 'moodle') . " $text";
+        $inorout = $OUTPUT->pix_icon('a/logout', $text, 'moodle') . " $text";
     } else {
         $text = get_string("signin", "attendees");
-        $inorout = $OUTPUT->pix_icon('withoutkey', $text , 'enrol_self') . " $text";
+        $inorout = $OUTPUT->pix_icon('withoutkey', $text, 'enrol_self') . " $text";
     }
 
     return '
@@ -895,7 +899,7 @@ function attendees_signinout($attendees, $userid) {
         $DB->insert_record('attendees_timecard', $timecard);
     }
 
-    $a = new stdClass;
+    $a = new stdClass();
     $a->firstname = $user->firstname;
     $a->lastname = $user->lastname;
     return get_string("messagesigned" . $timecard->event, "attendees", $a);
@@ -947,22 +951,35 @@ function attendees_is_active($user, $attendees) {
 
     if (!empty($lastin) || !empty($lastout)) {
         if ($attendees->autosignout) { // Auto signed out at the end of the day.
-            if (!empty($lastout) && !empty($lastin) &&
-                $lastout->timelog > $lastin->timelog && $lastout->timelog > $today) { // Have signed out today.
+            if (
+                !empty($lastout)
+                && !empty($lastin)
+                && $lastout->timelog > $lastin->timelog
+                && $lastout->timelog > $today
+            ) { // Have signed out today.
                 return false;
-            } else if (!empty($lastout) && !empty($lastin) &&
-                      $lastin->timelog > $lastout->timelog && $today > $lastin->timelog) { // Haven't signed in today.
+            } else if (
+                !empty($lastout)
+                && !empty($lastin)
+                && $lastin->timelog > $lastout->timelog
+                && $today > $lastin->timelog
+            ) { // Haven't signed in today.
                 return false;
-            } else if ((!empty($lastout) && !empty($lastin) && $today > $lastout->timelog && $today > $lastin->timelog) ||
-                        (empty($lastout) && !empty($lastin) && $today > $lastin->timelog)) { // New day.
+            } else if (
+                (!empty($lastout) && !empty($lastin) && $today > $lastout->timelog && $today > $lastin->timelog)
+                || (empty($lastout) && !empty($lastin) && $today > $lastin->timelog)
+            ) { // New day.
                 return false;
             } else if (empty($lastin)) { // Have never signed in.
                 return false;
             }
             return true;
         } else { // No autosignout.
-            if (!empty($lastout) && !empty($lastin) &&
-                $lastout->timelog > $lastin->timelog) { // Last action was a sign out.
+            if (
+                !empty($lastout)
+                && !empty($lastin)
+                && $lastout->timelog > $lastin->timelog
+            ) { // Last action was a sign out.
                 return false;
             } else if (empty($lastin)) { // Have never signed in.
                 return false;
@@ -1034,7 +1051,7 @@ function attendees_lookup($attendees, $code) {
         $searchparams["code$sp"] = $code;
     }
 
-    list($esql, $params) = get_enrolled_sql($context, 'mod/attendees:signinout', $groupid, true);
+    [$esql, $params] = get_enrolled_sql($context, 'mod/attendees:signinout', $groupid, true);
     $sql = "SELECT u.id
             FROM {user} u
             JOIN ($esql) je ON je.id = u.id
@@ -1085,7 +1102,10 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
     if ($attendees->kioskmode && $attendees->timecard && !$refresh) {
         $kioskform .= '
             <div class="attendees_usersearch">
-                <form method="get" action="' . $url . '" style="padding: 10px;width: 450px;margin: auto;">
+                <form
+                    method="get"
+                    action="' . $url . '"
+                    style="display: flex;align-items: center;padding: 10px;width: 450px;margin: auto;">
                     <input  type="hidden"
                             name="id"
                             id="id"
@@ -1149,13 +1169,18 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
 
         // Only show icons if timecard is enabled and has permissions.
         $icons = "";
-        if (!empty($attendees->timecard)
+        if (
+            !empty($attendees->timecard)
             && !empty($signinoutothers)
-            && (empty($attendees->kioskmode)
-                || (!empty($attendees->kioskmode) && !empty($attendees->kioskbuttons)
-                || $attendees->view === "overwatch")
-            )) {
-
+            && (
+                empty($attendees->kioskmode)
+                || (
+                    !empty($attendees->kioskmode)
+                    && !empty($attendees->kioskbuttons)
+                    || $attendees->view === "overwatch"
+                )
+            )
+        ) {
             $icons = '
                 <a  class="attendees_otherinout_button"
                     href="' . $url . "&userid=$user->id" . '"
@@ -1166,7 +1191,7 @@ function attendees_roster_view($cm, $users, $attendees, $refresh = false) {
         }
 
         $useroutput .= '
-            <div class="attendees_userblock attendees_status_'. $status . '">
+            <div class="attendees_userblock attendees_status_' . $status . '">
                 ' . $icons . '
                 ' . $OUTPUT->user_picture($user, $options) . '
                 <div class="attendees_name">
@@ -1633,4 +1658,3 @@ function get_duration($seconds) {
         return gmdate('H\h i\m s\s', $seconds);
     }
 }
-
